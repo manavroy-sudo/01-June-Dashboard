@@ -2,8 +2,5 @@
   "version": 2,
   "builds": [{ "src": "index.html", "use": "@vercel/static" }],
   "routes": [{ "src": "/(.*)", "dest": "/$1" }],
-  "headers": [{
-    "source": "/(.*)",
-    "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
-  }]
+  "headers": [{ "source": "/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }] }]
 }
