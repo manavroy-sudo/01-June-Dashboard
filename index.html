@@ -1,1167 +1,630 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Partner Performance Dashboard · InsuranceDekho</title>
-
-<!-- Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
-
-<!-- Chart.js -->
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Partner Dashboard · InsuranceDekho</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-
 <style>
-/* ═══════════════════════════════════════════════
-   DESIGN TOKENS
-═══════════════════════════════════════════════ */
-:root {
-  --bg:           #0b0f1a;
-  --surface:      #111827;
-  --surface2:     #1a2236;
-  --surface3:     #1f2d45;
-  --border:       #1e2d45;
-  --border2:      #2a3f5f;
-
-  --text:         #e8edf5;
-  --text-2:       #8fa3be;
-  --text-3:       #4d6380;
-
-  --accent:       #3b82f6;
-  --accent-glow:  rgba(59,130,246,0.15);
-  --accent2:      #06b6d4;
-  --green:        #10b981;
-  --red:          #ef4444;
-  --amber:        #f59e0b;
-  --purple:       #8b5cf6;
-
-  --font:         'DM Sans', sans-serif;
-  --mono:         'DM Mono', monospace;
-  --radius:       10px;
-  --radius-lg:    16px;
-  --shadow:       0 4px 24px rgba(0,0,0,0.4);
+/* ── TOKENS ─────────────────────────────── */
+:root{
+  --bg:#080d17;--surf:#0e1624;--surf2:#131e2e;--surf3:#192336;
+  --bdr:#1a2840;--bdr2:#243550;
+  --txt:#dde6f5;--txt2:#7b97b8;--txt3:#3d5470;
+  --blue:#3b82f6;--blue-g:rgba(59,130,246,.14);
+  --cyan:#22d3ee;--green:#10b981;--red:#f43f5e;
+  --amber:#f59e0b;--purple:#a78bfa;
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+  --r:10px;--r2:16px;
 }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:13px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--txt);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--surf)}
+::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--blue)}
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ── LOADING ─────────────────────────────── */
+#splash{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px}
+.spin{width:42px;height:42px;border-radius:50%;border:3px solid var(--bdr2);border-top-color:var(--blue);animation:spin .75s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.splash-label{font-size:14px;color:var(--txt2);letter-spacing:.04em}
+.splash-sub{font-size:11px;color:var(--txt3)}
 
-html { font-size: 14px; scroll-behavior: smooth; }
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font);
-  min-height: 100vh;
-  overflow-x: hidden;
+/* ── LAYOUT ─────────────────────────────── */
+#app{display:none;flex-direction:column;min-height:100vh}
+
+/* ── HEADER ─────────────────────────────── */
+.hdr{
+  position:sticky;top:0;z-index:100;
+  height:58px;padding:0 24px;
+  display:flex;align-items:center;gap:16px;
+  background:rgba(8,13,23,.88);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--bdr);
 }
+.logo{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0}
+.hdr-title{font-size:14px;font-weight:700;color:var(--txt)}
+.hdr-sub{font-size:10px;color:var(--txt3);margin-top:1px;font-weight:400}
+.hdr-space{flex:1}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);border-radius:20px;padding:4px 11px;font-size:10px;color:var(--green);font-weight:600;letter-spacing:.04em}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#tsLabel{font-size:10px;color:var(--txt3)}
+.hbtn{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bdr2);background:var(--surf2);color:var(--txt2);border-radius:var(--r);padding:6px 13px;font-size:11px;cursor:pointer;font-family:var(--font);transition:all .18s}
+.hbtn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-g)}
 
-/* ═══════════════════════════════════════════════
-   SCROLLBAR
-═══════════════════════════════════════════════ */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+/* ── MAIN ─────────────────────────────── */
+.main{padding:20px 24px;flex:1;display:flex;flex-direction:column;gap:18px}
 
-/* ═══════════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════════ */
-.app { display: flex; flex-direction: column; min-height: 100vh; }
+/* ── ERROR ─────────────────────────────── */
+.err{display:none;align-items:flex-start;gap:10px;background:rgba(244,63,94,.07);border:1px solid rgba(244,63,94,.22);border-radius:var(--r);padding:13px 16px;color:var(--red);font-size:12px;line-height:1.5}
+.err.on{display:flex}
 
-/* ── Header ── */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(11,15,26,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: 0 28px;
-  display: flex; align-items: center; gap: 20px;
-  height: 60px;
-}
-.header-logo {
-  display: flex; align-items: center; gap: 10px;
-}
-.logo-badge {
-  width: 36px; height: 36px; border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  display: flex; align-items: center; justify-content: center;
-  font-weight: 700; font-size: 15px; color: #fff;
-  flex-shrink: 0;
-}
-.header-title { font-size: 15px; font-weight: 600; color: var(--text); }
-.header-sub   { font-size: 11px; color: var(--text-3); margin-top: 1px; }
-.header-spacer { flex: 1; }
+/* ── KPI GRID ─────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.kpi{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r2);padding:16px 18px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s;cursor:default}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0}
+.kpi.bl::before{background:var(--blue)}
+.kpi.gr::before{background:var(--green)}
+.kpi.rd::before{background:var(--red)}
+.kpi.am::before{background:var(--amber)}
+.kpi.pu::before{background:var(--purple)}
+.kpi.cy::before{background:var(--cyan)}
+.kpi:hover{transform:translateY(-2px);border-color:var(--bdr2)}
+.kpi-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;font-weight:700}
+.kpi-val{font-size:28px;font-weight:800;color:var(--txt);margin:5px 0 3px;line-height:1}
+.kpi-val.sm{font-size:18px}
+.kpi-sub{font-size:10px;color:var(--txt3)}
+.kpi-ico{position:absolute;top:12px;right:14px;font-size:20px;opacity:.1}
 
-.live-badge {
-  display: flex; align-items: center; gap: 6px;
-  background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
-  border-radius: 20px; padding: 4px 12px;
-  font-size: 11px; color: var(--green); font-weight: 500;
-}
-.live-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: var(--green);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%,100%{ opacity:1; transform:scale(1); }
-  50%    { opacity:0.5; transform:scale(0.8); }
-}
+/* ── CHARTS ─────────────────────────────── */
+.charts{display:grid;grid-template-columns:1.7fr 1fr 1fr;gap:12px}
+.chart-card{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r2);padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.chart-ttl{font-size:12px;font-weight:700;color:var(--txt);letter-spacing:.02em}
+.chart-wrap{position:relative;height:190px}
+@media(max-width:1100px){.charts{grid-template-columns:1fr 1fr}.charts .chart-card:first-child{grid-column:1/-1}}
+@media(max-width:680px){.charts{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
 
-#lastUpdated { font-size: 11px; color: var(--text-3); }
+/* ── FILTERS ─────────────────────────────── */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end}
+.fg{display:flex;flex-direction:column;gap:3px}
+.fl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.fi,.fs{background:var(--surf);border:1px solid var(--bdr2);color:var(--txt);border-radius:var(--r);padding:7px 11px;font-size:12px;font-family:var(--font);outline:none;height:34px;transition:border-color .18s}
+.fi{width:210px}.fs{min-width:130px;cursor:pointer}
+.fi:focus,.fs:focus{border-color:var(--blue)}
+.fs option{background:var(--surf2)}
+.rcount{font-size:11px;color:var(--txt3);align-self:center;white-space:nowrap;margin-left:auto}
+.btn-clear{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--bdr2);background:transparent;color:var(--txt3);border-radius:var(--r);padding:6px 12px;font-size:11px;cursor:pointer;font-family:var(--font);transition:all .18s}
+.btn-clear:hover{border-color:var(--red);color:var(--red)}
+.btn-export{display:inline-flex;align-items:center;gap:5px;border:none;background:var(--blue);color:#fff;border-radius:var(--r);padding:7px 14px;font-size:11px;cursor:pointer;font-family:var(--font);font-weight:600;transition:opacity .18s}
+.btn-export:hover{opacity:.85}
 
-.btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--border2); background: var(--surface2);
-  color: var(--text-2); border-radius: var(--radius);
-  padding: 6px 14px; font-size: 12px; cursor: pointer;
-  font-family: var(--font); transition: all 0.2s;
-}
-.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
-.btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
-.btn.primary:hover { opacity: 0.88; }
+/* ── TABLE ─────────────────────────────── */
+.tcard{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--r2);overflow:hidden;display:flex;flex-direction:column}
+.tscroll{overflow-x:auto;flex:1}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;z-index:10}
+th{background:var(--surf2);color:var(--txt3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:9px 11px;text-align:left;border-bottom:1px solid var(--bdr);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--txt);background:var(--surf3)}
+th.sa::after{content:' ↑';color:var(--blue)}
+th.sd::after{content:' ↓';color:var(--blue)}
+th.mc{background:rgba(59,130,246,.06);color:var(--blue)}
+th.mc:hover{background:rgba(59,130,246,.12)}
+td{padding:8px 11px;border-bottom:1px solid rgba(26,40,64,.5);color:var(--txt2);white-space:nowrap;vertical-align:middle}
+tr:hover td{background:rgba(59,130,246,.04);color:var(--txt)}
+tr:last-child td{border-bottom:none}
+.cn{color:var(--txt);font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.cg{font-family:var(--mono);font-size:10px;color:var(--txt3)}
+.nm{font-family:var(--mono);text-align:right}
+.nm.p{color:var(--green)}.nm.n{color:var(--red)}.nm.z{color:var(--txt3)}
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.bdg.act{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.18)}
+.bdg.ina{background:rgba(244,63,94,.08);color:var(--red);border:1px solid rgba(244,63,94,.14)}
+.bdg.zn{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.18)}
+.gchip{display:inline-flex;align-items:center;gap:2px;font-size:10px;font-family:var(--mono);font-weight:600;padding:1px 6px;border-radius:4px}
+.gchip.p{background:rgba(16,185,129,.1);color:var(--green)}
+.gchip.n{background:rgba(244,63,94,.08);color:var(--red)}
+.gchip.z{background:rgba(100,116,139,.1);color:var(--txt3)}
 
-/* ── Main content ── */
-.main { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+/* ── PAGINATION ─────────────────────────── */
+.tfoot{display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid var(--bdr);background:var(--surf2)}
+.pinfo{font-size:11px;color:var(--txt3);flex:1}
+.pbtns{display:flex;gap:3px}
+.pb{width:28px;height:28px;border-radius:6px;background:var(--surf3);border:1px solid var(--bdr2);color:var(--txt2);cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;transition:all .14s;font-family:var(--font)}
+.pb:hover{border-color:var(--blue);color:var(--blue)}
+.pb.act{background:var(--blue);color:#fff;border-color:transparent}
+.pb:disabled{opacity:.3;cursor:not-allowed}
+.rsel{background:var(--surf3);border:1px solid var(--bdr2);color:var(--txt2);border-radius:6px;padding:4px 7px;font-size:11px;font-family:var(--font);cursor:pointer}
 
-/* ═══════════════════════════════════════════════
-   LOADING / ERROR
-═══════════════════════════════════════════════ */
-.loading-screen {
-  position: fixed; inset: 0; z-index: 500;
-  background: var(--bg);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 16px;
-}
-.loading-spinner {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 3px solid var(--border2);
-  border-top-color: var(--accent);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.loading-text { color: var(--text-2); font-size: 14px; }
-.loading-sub  { color: var(--text-3); font-size: 12px; }
-
-.error-banner {
-  display: none;
-  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
-  border-radius: var(--radius); padding: 14px 18px;
-  color: var(--red); font-size: 13px; gap: 10px;
-  align-items: flex-start;
-}
-.error-banner.show { display: flex; }
-
-/* ═══════════════════════════════════════════════
-   KPI CARDS
-═══════════════════════════════════════════════ */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px;
-}
-
-.kpi-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-  position: relative; overflow: hidden;
-  transition: transform 0.2s, border-color 0.2s;
-}
-.kpi-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-.kpi-card.blue::before  { background: var(--accent); }
-.kpi-card.green::before { background: var(--green); }
-.kpi-card.red::before   { background: var(--red); }
-.kpi-card.amber::before { background: var(--amber); }
-.kpi-card.purple::before{ background: var(--purple); }
-.kpi-card.cyan::before  { background: var(--accent2); }
-
-.kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
-
-.kpi-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-.kpi-value { font-size: 26px; font-weight: 700; color: var(--text); margin: 6px 0 4px; line-height: 1; }
-.kpi-value.small { font-size: 18px; }
-.kpi-sub   { font-size: 11px; color: var(--text-3); }
-.kpi-icon  {
-  position: absolute; top: 14px; right: 16px;
-  font-size: 22px; opacity: 0.12;
-}
-
-/* ═══════════════════════════════════════════════
-   CHARTS ROW
-═══════════════════════════════════════════════ */
-.charts-row {
-  display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr;
-  gap: 14px;
-}
-
-.chart-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 18px 20px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.chart-title { font-size: 13px; font-weight: 600; color: var(--text); }
-.chart-wrap  { position: relative; height: 200px; }
-
-/* ═══════════════════════════════════════════════
-   FILTERS BAR
-═══════════════════════════════════════════════ */
-.filters-bar {
-  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-}
-
-.filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filter-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-
-.filter-input, .filter-select {
-  background: var(--surface); border: 1px solid var(--border2);
-  color: var(--text); border-radius: var(--radius);
-  padding: 7px 12px; font-size: 13px;
-  font-family: var(--font); outline: none;
-  transition: border-color 0.2s;
-  height: 36px;
-}
-.filter-input  { width: 220px; }
-.filter-select { min-width: 140px; cursor: pointer; }
-.filter-input:focus, .filter-select:focus { border-color: var(--accent); }
-.filter-select option { background: var(--surface2); }
-
-.filters-bar .spacer { flex: 1; }
-.result-count { font-size: 12px; color: var(--text-3); align-self: center; white-space: nowrap; }
-
-/* ═══════════════════════════════════════════════
-   TABLE
-═══════════════════════════════════════════════ */
-.table-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  display: flex; flex-direction: column;
-}
-
-.table-scroll { overflow-x: auto; flex: 1; }
-
-table {
-  width: 100%; border-collapse: collapse;
-  font-size: 12.5px;
-}
-
-thead { position: sticky; top: 0; z-index: 10; }
-
-th {
-  background: var(--surface2);
-  color: var(--text-3);
-  font-weight: 600; font-size: 11px;
-  text-transform: uppercase; letter-spacing: 0.04em;
-  padding: 10px 12px;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  position: relative;
-}
-th:hover { color: var(--text); background: var(--surface3); }
-th.sorted-asc::after  { content: ' ↑'; color: var(--accent); }
-th.sorted-desc::after { content: ' ↓'; color: var(--accent); }
-
-th.month-col { background: rgba(59,130,246,0.06); color: var(--accent); }
-th.month-col:hover { background: rgba(59,130,246,0.12); }
-
-td {
-  padding: 9px 12px;
-  border-bottom: 1px solid rgba(30,45,69,0.6);
-  color: var(--text-2);
-  white-space: nowrap;
-  vertical-align: middle;
-}
-td:first-child { color: var(--text-3); font-size: 11px; font-family: var(--mono); }
-
-tr:hover td { background: rgba(59,130,246,0.04); color: var(--text); }
-tr:last-child td { border-bottom: none; }
-
-.cell-name { color: var(--text); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-.cell-gid  { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
-.cell-num  { font-family: var(--mono); text-align: right; }
-.cell-num.positive { color: var(--green); }
-.cell-num.negative { color: var(--red); }
-.cell-num.zero     { color: var(--text-3); }
-
-.badge {
-  display: inline-flex; align-items: center;
-  padding: 2px 8px; border-radius: 20px;
-  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
-}
-.badge.active   { background: rgba(16,185,129,0.12); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
-.badge.inactive { background: rgba(239,68,68,0.10); color: var(--red);   border: 1px solid rgba(239,68,68,0.15); }
-
-.badge.zone {
-  background: rgba(59,130,246,0.10); color: var(--accent); border: 1px solid rgba(59,130,246,0.2);
-}
-
-.growth-chip {
-  display: inline-flex; align-items: center; gap: 3px;
-  font-size: 11px; font-family: var(--mono); font-weight: 600;
-  padding: 1px 7px; border-radius: 4px;
-}
-.growth-chip.pos { background: rgba(16,185,129,0.1); color: var(--green); }
-.growth-chip.neg { background: rgba(239,68,68,0.08); color: var(--red); }
-.growth-chip.neu { background: rgba(100,116,139,0.1); color: var(--text-3); }
-
-/* Mini sparkline bar */
-.spark-bar {
-  display: inline-block; width: 60px; height: 18px;
-  position: relative; vertical-align: middle;
-}
-.spark-bar canvas { width: 60px !important; height: 18px !important; }
-
-/* ── Pagination ── */
-.table-footer {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 16px;
-  border-top: 1px solid var(--border);
-  background: var(--surface2);
-}
-.page-info { font-size: 12px; color: var(--text-3); flex: 1; }
-
-.page-btns { display: flex; gap: 4px; }
-.page-btn {
-  width: 30px; height: 30px; border-radius: 6px;
-  background: var(--surface3); border: 1px solid var(--border2);
-  color: var(--text-2); cursor: pointer; font-size: 12px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.page-btn:hover { border-color: var(--accent); color: var(--accent); }
-.page-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
-.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.rows-select {
-  background: var(--surface3); border: 1px solid var(--border2);
-  color: var(--text-2); border-radius: 6px;
-  padding: 5px 8px; font-size: 12px;
-  font-family: var(--font); cursor: pointer;
-}
-
-/* ═══════════════════════════════════════════════
-   DETAIL PANEL (side drawer)
-═══════════════════════════════════════════════ */
-.drawer-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-  display: none;
-}
-.drawer-overlay.open { display: block; }
-
-.drawer {
-  position: fixed; top: 0; right: -540px; bottom: 0;
-  width: 520px; z-index: 201;
-  background: var(--surface);
-  border-left: 1px solid var(--border2);
-  display: flex; flex-direction: column;
-  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
-  overflow: hidden;
-}
-.drawer.open { right: 0; }
-
-.drawer-header {
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-start; gap: 14px;
-}
-.drawer-title { font-size: 16px; font-weight: 700; color: var(--text); }
-.drawer-sub   { font-size: 12px; color: var(--text-3); margin-top: 3px; }
-.drawer-close {
-  margin-left: auto; width: 30px; height: 30px;
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 6px; color: var(--text-2); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 16px; transition: all 0.15s;
-}
-.drawer-close:hover { border-color: var(--red); color: var(--red); }
-
-.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
-
-.detail-section { display: flex; flex-direction: column; gap: 8px; }
-.detail-section-title { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
-
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.detail-item {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 10px 12px;
-}
-.detail-item-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-.detail-item-val   { font-size: 14px; color: var(--text); font-weight: 500; }
-
-.monthly-chart-wrap { height: 160px; }
-
-/* ═══════════════════════════════════════════════
-   RESPONSIVE
-═══════════════════════════════════════════════ */
-@media(max-width:1100px) { .charts-row { grid-template-columns: 1fr 1fr; } .charts-row .chart-card:first-child { grid-column: 1/-1; } }
-@media(max-width:700px)  { .charts-row { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2,1fr); } .main { padding: 14px; } }
+/* ── DRAWER ─────────────────────────────── */
+.dov{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none}
+.dov.on{display:block}
+.drw{position:fixed;top:0;right:-540px;bottom:0;width:500px;z-index:201;background:var(--surf);border-left:1px solid var(--bdr2);display:flex;flex-direction:column;transition:right .28s cubic-bezier(.4,0,.2,1)}
+.drw.on{right:0}
+.dh{padding:18px 22px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;gap:12px}
+.dt{font-size:15px;font-weight:800;color:var(--txt)}
+.ds{font-size:11px;color:var(--txt3);margin-top:3px}
+.dc{margin-left:auto;width:28px;height:28px;background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;color:var(--txt2);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:15px;transition:all .14s}
+.dc:hover{border-color:var(--red);color:var(--red)}
+.db{flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:18px}
+.dsec-ttl{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:6px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.di{background:var(--surf2);border:1px solid var(--bdr);border-radius:var(--r);padding:9px 11px}
+.dil{font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.div2{font-size:13px;color:var(--txt);font-weight:600}
+.mcw{height:150px;position:relative}
 </style>
 </head>
 <body>
 
-<!-- LOADING SCREEN -->
-<div class="loading-screen" id="loadingScreen">
-  <div class="loading-spinner"></div>
-  <div class="loading-text">Loading Partner Data...</div>
-  <div class="loading-sub" id="loadingMsg">Connecting to Google Sheets</div>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="spin"></div>
+  <div class="splash-label">Loading Partner Data</div>
+  <div class="splash-sub" id="splashMsg">Connecting to Google Sheets…</div>
 </div>
 
-<!-- APP SHELL -->
-<div class="app" id="app" style="display:none;">
+<!-- APP -->
+<div id="app" style="display:none">
 
   <!-- HEADER -->
-  <header class="header">
-    <div class="header-logo">
-      <div class="logo-badge">ID</div>
-      <div>
-        <div class="header-title">InsuranceDekho</div>
-        <div class="header-sub">Partner Performance Dashboard</div>
-      </div>
+  <header class="hdr">
+    <div class="logo">ID</div>
+    <div>
+      <div class="hdr-title">InsuranceDekho</div>
+      <div class="hdr-sub">Partner Performance Dashboard · Live Data</div>
     </div>
-    <div class="header-spacer"></div>
-    <span id="lastUpdated" class="live-badge">
-      <span class="live-dot"></span> Live
-    </span>
-    <button class="btn" id="refreshBtn" onclick="refreshData()">
-      ↻ Refresh
-    </button>
+    <div class="hdr-space"></div>
+    <div class="live-pill"><span class="live-dot"></span>LIVE</div>
+    <span id="tsLabel"></span>
+    <button class="hbtn" onclick="doRefresh()">↻ Refresh</button>
   </header>
 
   <main class="main">
 
-    <!-- ERROR BANNER -->
-    <div class="error-banner" id="errorBanner">
-      ⚠️ <span id="errorMsg">Could not load data.</span>
+    <!-- ERROR -->
+    <div class="err" id="errBox">⚠️&nbsp;<span id="errMsg"></span></div>
+
+    <!-- KPI -->
+    <div class="kpi-grid">
+      <div class="kpi bl"><div class="kpi-ico">👥</div><div class="kpi-lbl">Total Partners</div><div class="kpi-val" id="kTotal">—</div><div class="kpi-sub">all zones</div></div>
+      <div class="kpi gr"><div class="kpi-ico">✅</div><div class="kpi-lbl">Active</div><div class="kpi-val" id="kActive">—</div><div class="kpi-sub" id="kActivePct">—</div></div>
+      <div class="kpi rd"><div class="kpi-ico">⛔</div><div class="kpi-lbl">Inactive</div><div class="kpi-val" id="kInactive">—</div><div class="kpi-sub" id="kInactivePct">—</div></div>
+      <div class="kpi am"><div class="kpi-ico">📈</div><div class="kpi-lbl">Growing</div><div class="kpi-val" id="kGrow">—</div><div class="kpi-sub">positive growth</div></div>
+      <div class="kpi pu"><div class="kpi-ico">📉</div><div class="kpi-lbl">Degrowth</div><div class="kpi-val" id="kDegrow">—</div><div class="kpi-sub">negative growth</div></div>
+      <div class="kpi cy"><div class="kpi-ico">₹</div><div class="kpi-lbl">Total Business</div><div class="kpi-val sm" id="kBiz">—</div><div class="kpi-sub">last 13 months</div></div>
     </div>
 
-    <!-- KPI CARDS -->
-    <div class="kpi-grid" id="kpiGrid">
-      <div class="kpi-card blue"><div class="kpi-icon">👥</div><div class="kpi-label">Total Partners</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">across all zones</div></div>
-      <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-label">Active Partners</div><div class="kpi-value" id="kpiActive">—</div><div class="kpi-sub" id="kpiActivePct">—</div></div>
-      <div class="kpi-card red"><div class="kpi-icon">⛔</div><div class="kpi-label">Inactive Partners</div><div class="kpi-value" id="kpiInactive">—</div><div class="kpi-sub" id="kpiInactivePct">—</div></div>
-      <div class="kpi-card amber"><div class="kpi-icon">📈</div><div class="kpi-label">Growing Partners</div><div class="kpi-value" id="kpiGrowing">—</div><div class="kpi-sub">positive growth</div></div>
-      <div class="kpi-card purple"><div class="kpi-icon">📉</div><div class="kpi-label">Degrowth Partners</div><div class="kpi-value" id="kpiDegrow">—</div><div class="kpi-sub">negative growth</div></div>
-      <div class="kpi-card cyan"><div class="kpi-icon">₹</div><div class="kpi-label">Total Business</div><div class="kpi-value small" id="kpiRevenue">—</div><div class="kpi-sub">last 13 months</div></div>
-    </div>
-
-    <!-- CHARTS ROW -->
-    <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-title">Monthly Business Trend (All Partners)</div>
-        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Partners by Zone</div>
-        <div class="chart-wrap"><canvas id="zoneChart"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Partners by Owner</div>
-        <div class="chart-wrap"><canvas id="ownerChart"></canvas></div>
-      </div>
+    <!-- CHARTS -->
+    <div class="charts">
+      <div class="chart-card"><div class="chart-ttl">Monthly Business Trend — All Partners</div><div class="chart-wrap"><canvas id="cTrend"></canvas></div></div>
+      <div class="chart-card"><div class="chart-ttl">Partners by Zone</div><div class="chart-wrap"><canvas id="cZone"></canvas></div></div>
+      <div class="chart-card"><div class="chart-ttl">Partners by Owner</div><div class="chart-wrap"><canvas id="cOwner"></canvas></div></div>
     </div>
 
     <!-- FILTERS -->
-    <div class="filters-bar" id="filtersBar">
-      <div class="filter-group">
-        <div class="filter-label">Search</div>
-        <input class="filter-input" id="searchInput" type="text" placeholder="Name, GID, City, Owner…" oninput="applyFilters()" />
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Zone</div>
-        <select class="filter-select" id="zoneFilter" onchange="applyFilters()">
-          <option value="">All Zones</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">State</div>
-        <select class="filter-select" id="stateFilter" onchange="applyFilters()">
-          <option value="">All States</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Owner (ZH)</div>
-        <select class="filter-select" id="ownerFilter" onchange="applyFilters()">
-          <option value="">All Owners</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Status</div>
-        <select class="filter-select" id="statusFilter" onchange="applyFilters()">
-          <option value="">All</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <div class="filter-label">Growth</div>
-        <select class="filter-select" id="growthFilter" onchange="applyFilters()">
-          <option value="">All</option>
-          <option value="pos">Growing</option>
-          <option value="neg">Degrowth</option>
-        </select>
-      </div>
-      <div class="spacer"></div>
-      <div class="result-count" id="resultCount">— partners</div>
-      <button class="btn" onclick="clearFilters()">✕ Clear</button>
-      <button class="btn primary" onclick="exportCSV()">⬇ Export CSV</button>
+    <div class="filters">
+      <div class="fg"><div class="fl">Search</div><input class="fi" id="fSearch" type="text" placeholder="Name, GID, City, Owner…" oninput="applyFilters()"/></div>
+      <div class="fg"><div class="fl">Zone</div><select class="fs" id="fZone" onchange="applyFilters()"><option value="">All Zones</option></select></div>
+      <div class="fg"><div class="fl">State</div><select class="fs" id="fState" onchange="applyFilters()"><option value="">All States</option></select></div>
+      <div class="fg"><div class="fl">Owner</div><select class="fs" id="fOwner" onchange="applyFilters()"><option value="">All Owners</option></select></div>
+      <div class="fg"><div class="fl">Status</div><select class="fs" id="fStatus" onchange="applyFilters()"><option value="">All</option><option value="active">Active</option><option value="inactive">Inactive</option></select></div>
+      <div class="fg"><div class="fl">Growth</div><select class="fs" id="fGrowth" onchange="applyFilters()"><option value="">All</option><option value="pos">Growing</option><option value="neg">Degrowth</option></select></div>
+      <div class="rcount" id="rcount">— partners</div>
+      <button class="btn-clear" onclick="clearFilters()">✕ Clear</button>
+      <button class="btn-export" onclick="exportCSV()">⬇ Export CSV</button>
     </div>
 
     <!-- TABLE -->
-    <div class="table-card">
-      <div class="table-scroll">
-        <table>
-          <thead id="tableHead"></thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <div class="table-footer">
-        <div class="page-info" id="pageInfo">—</div>
-        <select class="rows-select" id="rowsSelect" onchange="changePageSize()">
-          <option value="25">25 / page</option>
-          <option value="50">50 / page</option>
-          <option value="100">100 / page</option>
-          <option value="200">200 / page</option>
+    <div class="tcard">
+      <div class="tscroll"><table><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      <div class="tfoot">
+        <div class="pinfo" id="pinfo">—</div>
+        <select class="rsel" id="rsel" onchange="changePS()">
+          <option value="25">25/page</option><option value="50">50/page</option>
+          <option value="100">100/page</option><option value="200">200/page</option>
         </select>
-        <div class="page-btns" id="pageBtns"></div>
+        <div class="pbtns" id="pbtns"></div>
       </div>
     </div>
 
   </main>
 </div>
 
-<!-- DETAIL DRAWER -->
-<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
-<div class="drawer" id="drawer">
-  <div class="drawer-header">
-    <div>
-      <div class="drawer-title" id="drawerTitle">Partner Detail</div>
-      <div class="drawer-sub" id="drawerSub">—</div>
-    </div>
-    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+<!-- DRAWER -->
+<div class="dov" id="dov" onclick="closeDrw()"></div>
+<div class="drw" id="drw">
+  <div class="dh">
+    <div><div class="dt" id="drwTitle">Partner Detail</div><div class="ds" id="drwSub">—</div></div>
+    <button class="dc" onclick="closeDrw()">✕</button>
   </div>
-  <div class="drawer-body" id="drawerBody"></div>
+  <div class="db" id="drwBody"></div>
 </div>
-
-<!-- CONFIG (paste your URL in config.js) -->
-<script src="config.js"></script>
 
 <script>
 // ═══════════════════════════════════════════════════════════
-//  STATE
+//
+//  ▼▼▼ ONLY ONE THING TO EDIT IN THIS FILE ▼▼▼
+//
+//  Paste your Google Apps Script Web App URL below.
+//  It looks like: https://script.google.com/macros/s/XXXXX/exec
+//
 // ═══════════════════════════════════════════════════════════
-let ALL_DATA       = [];
-let HEADERS        = [];
-let MONTH_COLS     = [];
-let FILTERED_DATA  = [];
-let SORTED_COL     = null;
-let SORT_DIR       = 'asc';
-let CURRENT_PAGE   = 1;
-let PAGE_SIZE      = 25;
-let trendChart, zoneChart, ownerChart, drawerChart;
 
-const CFG = window.DASHBOARD_CONFIG || {};
-const API  = CFG.API_URL || "";
+const API_URL = "https://script.google.com/macros/s/AKfycbwuYGbPRvNIOFRMHO2C1emPfmwHVIjrVb57ask8goT6b4Yr4hDWwv9V9hHFqEUjMkSmZQ/exec";
 
 // ═══════════════════════════════════════════════════════════
-//  BOOTSTRAP
+//  DO NOT EDIT ANYTHING BELOW THIS LINE
 // ═══════════════════════════════════════════════════════════
+
+const MONTH_COLS   = ["April'2025","May'25","June'25","July'25","August'25","September'25","October'25","November'25","December'25","January'26","Feburary'26","March'26","April'26"];
+const MONTH_LABELS = ["Apr'25","May'25","Jun'25","Jul'25","Aug'25","Sep'25","Oct'25","Nov'25","Dec'25","Jan'26","Feb'26","Mar'26","Apr'26"];
+const PAL          = ['#3b82f6','#22d3ee','#10b981','#f59e0b','#a78bfa','#f43f5e','#fb923c','#34d399'];
+
+let ALL=[], FILT=[], SCOL=null, SDIR='desc', PAGE=1, PS=25;
+let cTrend, cZone, cOwner, cDrw;
+
+// ── BOOT ────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  if (!API || API.includes("YOUR_DEPLOYMENT_ID")) {
-    showError("⚠️ Please open config.js and paste your Google Apps Script Web App URL into API_URL.");
-    document.getElementById('loadingScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'flex';
+  if (!API_URL || API_URL === "PASTE_YOUR_APPS_SCRIPT_URL_HERE") {
+    showErr("Please open index.html, find the line  const API_URL = \"PASTE_YOUR_APPS_SCRIPT_URL_HERE\"  and replace it with your Google Apps Script URL.");
+    hide('splash'); show('app');
     return;
   }
-  loadData();
-
-  const interval = (CFG.AUTO_REFRESH_SECONDS || 0) * 1000;
-  if (interval > 0) setInterval(loadData, interval);
+  load();
+  setInterval(load, 120000); // auto-refresh every 2 min
 });
 
-// ═══════════════════════════════════════════════════════════
-//  DATA LOADING
-// ═══════════════════════════════════════════════════════════
-async function loadData() {
-  setLoading(true);
+// ── LOAD ────────────────────────────────────────────────────
+async function load() {
   try {
-    const url = `${API}?action=getData&ts=${Date.now()}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    msg('Fetching data from Google Sheets…');
+    const res  = await fetch(API_URL + "?action=getData&_=" + Date.now());
+    if (!res.ok) throw new Error("HTTP " + res.status);
     const json = await res.json();
     if (json.error) throw new Error(json.error);
 
-    ALL_DATA   = json.rows || [];
-    HEADERS    = json.headers || [];
-    MONTH_COLS = json.monthCols || CFG.MONTH_COLS || [];
-
-    populateFilters();
+    ALL = json.rows || [];
+    populateSelects();
     applyFilters();
     updateKPIs();
-    updateCharts();
+    buildCharts();
 
-    const ts = new Date(json.lastUpdated || Date.now());
-    document.getElementById('lastUpdated').innerHTML =
-      `<span class="live-dot"></span> ${ts.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}`;
-    hideError();
-  } catch (err) {
-    showError(`Failed to load: ${err.message}. Check that your API URL is correct and the Web App is deployed.`);
-    console.error(err);
+    const t = new Date(json.lastUpdated || Date.now());
+    el('tsLabel').textContent = t.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    hideErr();
+  } catch(e) {
+    showErr("Could not load data: " + e.message + " — Check that your Apps Script URL is correct, the Web App is deployed, and 'Who has access' is set to 'Anyone'.");
   }
-  setLoading(false);
+  hide('splash'); show('app');
 }
 
-function refreshData() {
-  document.getElementById('refreshBtn').textContent = '↻ Refreshing…';
-  loadData().then(() => {
-    document.getElementById('refreshBtn').textContent = '↻ Refresh';
-  });
+function doRefresh() { load(); }
+
+// ── SELECTS ─────────────────────────────────────────────────
+function populateSelects() {
+  fill('fZone',  uniq(ALL,'Zone'),  'All Zones');
+  fill('fState', uniq(ALL,'STATE'), 'All States');
+  fill('fOwner', uniq(ALL,'Owner'), 'All Owners');
 }
-
-function setLoading(on) {
-  document.getElementById('loadingScreen').style.display = on && ALL_DATA.length === 0 ? 'flex' : 'none';
-  document.getElementById('app').style.display = on && ALL_DATA.length === 0 ? 'none' : 'flex';
+function fill(id, opts, ph) {
+  const s = el(id), v = s.value;
+  s.innerHTML = `<option value="">${ph}</option>` + opts.map(o=>`<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  s.value = v;
 }
+function uniq(arr, key) { return [...new Set(arr.map(r=>str(r[key])).filter(Boolean))].sort(); }
 
-function showError(msg) {
-  const el = document.getElementById('errorBanner');
-  document.getElementById('errorMsg').textContent = msg;
-  el.classList.add('show');
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-}
-function hideError() { document.getElementById('errorBanner').classList.remove('show'); }
-
-// ═══════════════════════════════════════════════════════════
-//  FILTERS
-// ═══════════════════════════════════════════════════════════
-function populateFilters() {
-  const zones   = [...new Set(ALL_DATA.map(r => str(r["Zone"])).filter(Boolean))].sort();
-  const states  = [...new Set(ALL_DATA.map(r => str(r["STATE"])).filter(Boolean))].sort();
-  const owners  = [...new Set(ALL_DATA.map(r => str(r["Owner"])).filter(Boolean))].sort();
-
-  fillSelect('zoneFilter',  zones,  'All Zones');
-  fillSelect('stateFilter', states, 'All States');
-  fillSelect('ownerFilter', owners, 'All Owners');
-}
-
-function fillSelect(id, options, placeholder) {
-  const sel = document.getElementById(id);
-  const cur = sel.value;
-  sel.innerHTML = `<option value="">${placeholder}</option>` +
-    options.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
-  sel.value = cur;
-}
-
+// ── FILTERS ─────────────────────────────────────────────────
 function applyFilters() {
-  const q     = document.getElementById('searchInput').value.toLowerCase();
-  const zone  = document.getElementById('zoneFilter').value;
-  const state = document.getElementById('stateFilter').value;
-  const owner = document.getElementById('ownerFilter').value;
-  const status= document.getElementById('statusFilter').value;
-  const growth= document.getElementById('growthFilter').value;
+  const q  = el('fSearch').value.toLowerCase();
+  const z  = el('fZone').value;
+  const st = el('fState').value;
+  const ow = el('fOwner').value;
+  const s  = el('fStatus').value;
+  const g  = el('fGrowth').value;
 
-  FILTERED_DATA = ALL_DATA.filter(r => {
+  FILT = ALL.filter(r => {
     if (q) {
-      const haystack = [r["NAME"],r["GID/GCD"],r["GID/GCDD"],r["CITY"],r["Owner"],r["STATE"],r["Zone"]]
-        .map(v => str(v).toLowerCase()).join(' ');
-      if (!haystack.includes(q)) return false;
+      const hay = [r.NAME,r['GID/GCD'],r.CITY,r.STATE,r.Zone,r.Owner].map(v=>str(v).toLowerCase()).join(' ');
+      if (!hay.includes(q)) return false;
     }
-    if (zone  && str(r["Zone"])  !== zone)  return false;
-    if (state && str(r["STATE"]) !== state) return false;
-    if (owner && str(r["Owner"]) !== owner) return false;
-    if (status === 'active'   && !r._isActive) return false;
-    if (status === 'inactive' &&  r._isActive) return false;
-    if (growth === 'pos' && r._growthPct <= 0) return false;
-    if (growth === 'neg' && r._growthPct >= 0) return false;
+    if (z  && str(r.Zone)  !== z)  return false;
+    if (st && str(r.STATE) !== st) return false;
+    if (ow && str(r.Owner) !== ow) return false;
+    if (s === 'active'   && !r._isActive) return false;
+    if (s === 'inactive' &&  r._isActive) return false;
+    if (g === 'pos' && r._growthPct <= 0) return false;
+    if (g === 'neg' && r._growthPct >= 0) return false;
     return true;
   });
 
-  document.getElementById('resultCount').textContent =
-    `${fmt(FILTERED_DATA.length)} / ${fmt(ALL_DATA.length)} partners`;
-
-  if (SORTED_COL) applySortTo(FILTERED_DATA, SORTED_COL, SORT_DIR);
-
-  CURRENT_PAGE = 1;
+  el('rcount').textContent = `${fmt(FILT.length)} / ${fmt(ALL.length)} partners`;
+  if (SCOL) sortArr(FILT, SCOL, SDIR);
+  PAGE = 1;
   renderTable();
 }
 
 function clearFilters() {
-  ['searchInput','zoneFilter','stateFilter','ownerFilter','statusFilter','growthFilter']
-    .forEach(id => { const el = document.getElementById(id); el.value = ''; });
-  SORTED_COL = null; SORT_DIR = 'asc';
+  ['fSearch','fZone','fState','fOwner','fStatus','fGrowth'].forEach(id => el(id).value = '');
+  SCOL = null; SDIR = 'desc';
   applyFilters();
 }
 
-// ═══════════════════════════════════════════════════════════
-//  TABLE RENDER
-// ═══════════════════════════════════════════════════════════
-const VISIBLE_COLS = [
-  { key: 'S.No',           label: '#',          w: 40  },
-  { key: 'GID/GCD',        label: 'GID',         mono: true },
-  { key: 'NAME',           label: 'Partner Name', name: true },
-  { key: 'CITY',           label: 'City'  },
-  { key: 'STATE',          label: 'State' },
-  { key: 'Zone',           label: 'Zone', badge: 'zone' },
-  { key: 'Owner',          label: 'ZH Owner' },
-  { key: 'Active/Inactive',label: 'Status', status: true },
-  { key: 'Business potential with ID', label: 'Biz Potential', num: true },
-  { key: '_totalBusiness', label: 'Total (13M)', num: true, computed: true },
-  { key: '_avgMonthlyBusiness', label: 'Avg/Month', num: true, computed: true },
-  { key: 'Overall Potential', label: 'Overall Pot.', num: true },
-  { key: 'Projection for May', label: 'May Proj.', num: true },
-  { key: 'Growth/Degrowth', label: 'Growth', growth: true },
-  { key: 'Calls',          label: 'Calls', num: true },
-  { key: 'Visit',          label: 'Visit', num: true },
-  { key: '_spark',         label: '13M Trend', spark: true },
-];
-
-function renderTable() {
-  renderHead();
-  renderBody();
-  renderPagination();
-}
-
-function renderHead() {
-  const head = document.getElementById('tableHead');
-  const row  = document.createElement('tr');
-
-  VISIBLE_COLS.forEach(col => {
-    const th = document.createElement('th');
-    th.textContent = col.label;
-    th.style.minWidth = col.w ? col.w + 'px' : '';
-    if (!col.spark && !col.computed) th.style.cursor = 'pointer';
-    if (MONTH_COLS.includes(col.key)) th.classList.add('month-col');
-    if (!col.spark && !col.status && !col.badge) {
-      th.addEventListener('click', () => toggleSort(col.key));
-    }
-    if (SORTED_COL === col.key) th.classList.add(SORT_DIR === 'asc' ? 'sorted-asc' : 'sorted-desc');
-    row.appendChild(th);
-  });
-
-  // Month columns
-  MONTH_COLS.forEach((m, i) => {
-    const th = document.createElement('th');
-    th.classList.add('month-col');
-    th.textContent = (CFG.MONTH_LABELS || [])[i] || m;
-    th.title = m;
-    th.addEventListener('click', () => toggleSort(m));
-    if (SORTED_COL === m) th.classList.add(SORT_DIR === 'asc' ? 'sorted-asc' : 'sorted-desc');
-    row.appendChild(th);
-  });
-
-  head.innerHTML = '';
-  head.appendChild(row);
-}
-
-function renderBody() {
-  const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
-  const slice = FILTERED_DATA.slice(start, start + PAGE_SIZE);
-  const tbody = document.getElementById('tableBody');
-  tbody.innerHTML = '';
-
-  if (slice.length === 0) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.colSpan = VISIBLE_COLS.length + MONTH_COLS.length;
-    td.style.cssText = 'text-align:center;padding:40px;color:var(--text-3)';
-    td.textContent = 'No partners found';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    return;
-  }
-
-  slice.forEach((row, idx) => {
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.addEventListener('click', () => openDrawer(row));
-
-    VISIBLE_COLS.forEach(col => {
-      const td = document.createElement('td');
-
-      if (col.key === '_spark') {
-        const canvas = document.createElement('canvas');
-        canvas.width = 60; canvas.height = 18;
-        td.appendChild(canvas);
-        setTimeout(() => renderMiniSpark(canvas, row), 0);
-
-      } else if (col.status) {
-        const raw = str(row[col.key]);
-        const isActive = raw.toLowerCase().includes('active') && !raw.toLowerCase().includes('inactive');
-        td.innerHTML = `<span class="badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span>`;
-
-      } else if (col.badge === 'zone') {
-        td.innerHTML = `<span class="badge zone">${esc(str(row[col.key]))}</span>`;
-
-      } else if (col.name) {
-        td.innerHTML = `<span class="cell-name" title="${esc(str(row[col.key]))}">${esc(str(row[col.key]))}</span>`;
-
-      } else if (col.growth) {
-        const pct = parseFloat(str(row[col.key]).replace(/%/g,'')) || row._growthPct || 0;
-        const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'neu';
-        const icon = pct > 0 ? '▲' : pct < 0 ? '▼' : '–';
-        td.innerHTML = `<span class="growth-chip ${cls}">${icon} ${pct !== 0 ? Math.abs(pct).toFixed(0)+'%' : '0%'}</span>`;
-
-      } else if (col.num || col.computed) {
-        const v = col.computed ? (row[col.key] || 0) : numVal(row[col.key]);
-        td.className = 'cell-num ' + (v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero');
-        td.textContent = v !== 0 ? fmtNum(v) : '—';
-
-      } else if (col.mono) {
-        td.className = 'cell-gid';
-        td.textContent = str(row[col.key]);
-
-      } else {
-        td.textContent = str(row[col.key]);
-      }
-
-      tr.appendChild(td);
-    });
-
-    // Month cells
-    MONTH_COLS.forEach(m => {
-      const td = document.createElement('td');
-      const v  = numVal((row._monthlyData || {})[m]);
-      td.className = 'cell-num ' + (v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero');
-      td.textContent = v > 0 ? fmtNum(v) : '—';
-      tr.appendChild(td);
-    });
-
-    tbody.appendChild(tr);
-  });
-}
-
-// ── Mini sparkline ──
-function renderMiniSpark(canvas, row) {
-  const ctx = canvas.getContext('2d');
-  const vals = MONTH_COLS.map(m => numVal((row._monthlyData || {})[m]));
-  if (vals.every(v => v === 0)) { ctx.fillStyle = '#4d6380'; ctx.fillRect(20,8,20,2); return; }
-
-  const max = Math.max(...vals) || 1;
-  const w = 60, h = 18, pad = 1;
-  const step = (w - pad*2) / Math.max(vals.length - 1, 1);
-
-  ctx.clearRect(0,0,w,h);
-  ctx.beginPath();
-  vals.forEach((v, i) => {
-    const x = pad + i * step;
-    const y = pad + (1 - v/max) * (h - pad*2);
-    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-  });
-  ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5;
-  ctx.stroke();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  SORT
-// ═══════════════════════════════════════════════════════════
-function toggleSort(col) {
-  if (SORTED_COL === col) SORT_DIR = SORT_DIR === 'asc' ? 'desc' : 'asc';
-  else { SORTED_COL = col; SORT_DIR = 'desc'; }
-  applySortTo(FILTERED_DATA, SORTED_COL, SORT_DIR);
-  CURRENT_PAGE = 1;
-  renderTable();
-}
-
-function applySortTo(arr, col, dir) {
-  arr.sort((a, b) => {
-    let va = col.startsWith('_') ? (a[col] || 0) : (MONTH_COLS.includes(col)
-      ? numVal((a._monthlyData||{})[col]) : numVal(a[col]) || str(a[col]).toLowerCase());
-    let vb = col.startsWith('_') ? (b[col] || 0) : (MONTH_COLS.includes(col)
-      ? numVal((b._monthlyData||{})[col]) : numVal(b[col]) || str(b[col]).toLowerCase());
-    if (va < vb) return dir === 'asc' ? -1 : 1;
-    if (va > vb) return dir === 'asc' ?  1 : -1;
-    return 0;
-  });
-}
-
-// ═══════════════════════════════════════════════════════════
-//  PAGINATION
-// ═══════════════════════════════════════════════════════════
-function renderPagination() {
-  const total = FILTERED_DATA.length;
-  const pages = Math.ceil(total / PAGE_SIZE);
-  const start = Math.min((CURRENT_PAGE - 1) * PAGE_SIZE + 1, total);
-  const end   = Math.min(CURRENT_PAGE * PAGE_SIZE, total);
-
-  document.getElementById('pageInfo').textContent =
-    total === 0 ? 'No results' : `Showing ${fmt(start)}–${fmt(end)} of ${fmt(total)}`;
-
-  const container = document.getElementById('pageBtns');
-  container.innerHTML = '';
-
-  const addBtn = (label, page, active, disabled) => {
-    const b = document.createElement('button');
-    b.className = 'page-btn' + (active ? ' active' : '');
-    b.textContent = label;
-    b.disabled = disabled;
-    if (!disabled) b.addEventListener('click', () => { CURRENT_PAGE = page; renderTable(); });
-    container.appendChild(b);
-  };
-
-  addBtn('‹', CURRENT_PAGE - 1, false, CURRENT_PAGE === 1);
-
-  const window_ = 2;
-  let lo = Math.max(1, CURRENT_PAGE - window_);
-  let hi = Math.min(pages, CURRENT_PAGE + window_);
-  if (lo > 1) { addBtn(1, 1, false, false); if (lo > 2) container.insertAdjacentHTML('beforeend','<span style="color:var(--text-3);align-self:center;padding:0 4px">…</span>'); }
-  for (let p = lo; p <= hi; p++) addBtn(p, p, p === CURRENT_PAGE, false);
-  if (hi < pages) { if (hi < pages-1) container.insertAdjacentHTML('beforeend','<span style="color:var(--text-3);align-self:center;padding:0 4px">…</span>'); addBtn(pages, pages, false, false); }
-
-  addBtn('›', CURRENT_PAGE + 1, false, CURRENT_PAGE >= pages);
-}
-
-function changePageSize() {
-  PAGE_SIZE = parseInt(document.getElementById('rowsSelect').value);
-  CURRENT_PAGE = 1;
-  renderTable();
-}
-
-// ═══════════════════════════════════════════════════════════
-//  KPI CARDS
-// ═══════════════════════════════════════════════════════════
+// ── KPI ─────────────────────────────────────────────────────
 function updateKPIs() {
-  const total    = ALL_DATA.length;
-  const active   = ALL_DATA.filter(r => r._isActive).length;
-  const inactive = total - active;
-  const growing  = ALL_DATA.filter(r => r._growthPct > 0).length;
-  const degrow   = ALL_DATA.filter(r => r._growthPct < 0).length;
-  const totalBiz = ALL_DATA.reduce((s, r) => s + (r._totalBusiness || 0), 0);
+  const tot  = ALL.length;
+  const act  = ALL.filter(r => r._isActive).length;
+  const ina  = tot - act;
+  const grow = ALL.filter(r => r._growthPct > 0).length;
+  const deg  = ALL.filter(r => r._growthPct < 0).length;
+  const biz  = ALL.reduce((s,r) => s + (r._totalBusiness||0), 0);
 
-  document.getElementById('kpiTotal').textContent    = fmt(total);
-  document.getElementById('kpiActive').textContent   = fmt(active);
-  document.getElementById('kpiInactive').textContent = fmt(inactive);
-  document.getElementById('kpiGrowing').textContent  = fmt(growing);
-  document.getElementById('kpiDegrow').textContent   = fmt(degrow);
-  document.getElementById('kpiRevenue').textContent  = '₹' + fmtCr(totalBiz);
-  document.getElementById('kpiActivePct').textContent   = `${pct(active, total)} of total`;
-  document.getElementById('kpiInactivePct').textContent = `${pct(inactive, total)} of total`;
+  el('kTotal').textContent   = fmt(tot);
+  el('kActive').textContent  = fmt(act);
+  el('kInactive').textContent= fmt(ina);
+  el('kGrow').textContent    = fmt(grow);
+  el('kDegrow').textContent  = fmt(deg);
+  el('kBiz').textContent     = '₹' + crore(biz);
+  el('kActivePct').textContent   = pct(act,tot) + ' of total';
+  el('kInactivePct').textContent = pct(ina,tot) + ' of total';
 }
 
-// ═══════════════════════════════════════════════════════════
-//  CHARTS
-// ═══════════════════════════════════════════════════════════
-const CHART_OPTS = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: { size: 10 } } },
-    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: { size: 10 },
-      callback: v => '₹' + fmtCr(v) } }
-  }
-};
-
-function updateCharts() {
-  // Trend chart
-  const monthTotals = MONTH_COLS.map(m =>
-    ALL_DATA.reduce((s, r) => s + numVal((r._monthlyData||{})[m]), 0)
-  );
-  const labels = CFG.MONTH_LABELS || MONTH_COLS;
-
-  if (trendChart) trendChart.destroy();
-  trendChart = new Chart(document.getElementById('trendChart'), {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [{
-        data: monthTotals,
-        backgroundColor: monthTotals.map((v, i) => i === monthTotals.length-1 ? 'rgba(59,130,246,0.8)' : 'rgba(59,130,246,0.35)'),
-        borderColor: 'rgba(59,130,246,0.9)',
-        borderWidth: 1,
-        borderRadius: 4,
-      }]
-    },
-    options: { ...CHART_OPTS, plugins: { legend: { display: false }, tooltip: { callbacks: {
-      label: ctx => '₹' + fmtCr(ctx.parsed.y)
-    }}}}
+// ── CHARTS ──────────────────────────────────────────────────
+function buildCharts() {
+  // Trend
+  const totals = MONTH_COLS.map(m => ALL.reduce((s,r) => s + num((r._monthlyData||{})[m]), 0));
+  if (cTrend) cTrend.destroy();
+  cTrend = new Chart(el('cTrend'), {
+    type:'bar',
+    data:{ labels:MONTH_LABELS, datasets:[{
+      data:totals,
+      backgroundColor: totals.map((_,i) => i===totals.length-1?'rgba(59,130,246,.85)':'rgba(59,130,246,.32)'),
+      borderColor:'rgba(59,130,246,.8)', borderWidth:1, borderRadius:4
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>'₹'+crore(c.parsed.y)}}},
+      scales:{ x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3d5470',font:{size:9}}},
+               y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3d5470',font:{size:9},callback:v=>'₹'+crore(v)}}}
+    }
   });
 
   // Zone donut
-  const zoneMap = {};
-  ALL_DATA.forEach(r => { const z = str(r["Zone"]) || 'Unknown'; zoneMap[z] = (zoneMap[z]||0) + 1; });
-  const zLabels = Object.keys(zoneMap);
-  const zData   = Object.values(zoneMap);
-  const PALETTE = ['#3b82f6','#06b6d4','#10b981','#f59e0b','#8b5cf6','#ef4444','#f97316'];
-
-  if (zoneChart) zoneChart.destroy();
-  zoneChart = new Chart(document.getElementById('zoneChart'), {
-    type: 'doughnut',
-    data: { labels: zLabels, datasets: [{ data: zData,
-      backgroundColor: PALETTE.slice(0, zLabels.length),
-      borderColor: 'rgba(0,0,0,0.3)', borderWidth: 1.5
-    }]},
-    options: { responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { position: 'bottom', labels: { color: '#8fa3be', font: {size:10}, boxWidth:10 }},
-        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} partners` }}
-      }, cutout: '65%'
+  const zm = {}; ALL.forEach(r=>{ const z=str(r.Zone)||'—'; zm[z]=(zm[z]||0)+1; });
+  const zl = Object.keys(zm), zd = Object.values(zm);
+  if (cZone) cZone.destroy();
+  cZone = new Chart(el('cZone'), {
+    type:'doughnut',
+    data:{ labels:zl, datasets:[{ data:zd, backgroundColor:PAL.slice(0,zl.length), borderColor:'rgba(0,0,0,.25)', borderWidth:1.5 }]},
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'62%',
+      plugins:{ legend:{position:'bottom',labels:{color:'#7b97b8',font:{size:9},boxWidth:8}},
+                tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed} partners`}}}
     }
   });
 
   // Owner bar (top 8)
-  const ownerMap = {};
-  ALL_DATA.forEach(r => { const o = str(r["Owner"]) || 'Unknown'; ownerMap[o] = (ownerMap[o]||0) + 1; });
-  const oEntries = Object.entries(ownerMap).sort((a,b) => b[1]-a[1]).slice(0,8);
-
-  if (ownerChart) ownerChart.destroy();
-  ownerChart = new Chart(document.getElementById('ownerChart'), {
-    type: 'bar',
-    data: {
-      labels: oEntries.map(e => e[0]),
-      datasets: [{ data: oEntries.map(e => e[1]),
-        backgroundColor: 'rgba(6,182,212,0.45)',
-        borderColor: 'rgba(6,182,212,0.9)',
-        borderWidth: 1, borderRadius: 4
-      }]
-    },
-    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }},
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: {size:10} }},
-        y: { grid: { display: false }, ticks: { color: '#8fa3be', font: {size:10} }}
-      }
+  const om = {}; ALL.forEach(r=>{ const o=str(r.Owner)||'—'; om[o]=(om[o]||0)+1; });
+  const oe = Object.entries(om).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if (cOwner) cOwner.destroy();
+  cOwner = new Chart(el('cOwner'), {
+    type:'bar',
+    data:{ labels:oe.map(e=>e[0]), datasets:[{ data:oe.map(e=>e[1]),
+      backgroundColor:'rgba(34,211,238,.38)', borderColor:'rgba(34,211,238,.8)', borderWidth:1, borderRadius:4 }]},
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}},
+      scales:{ x:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3d5470',font:{size:9}}},
+               y:{grid:{display:false},ticks:{color:'#7b97b8',font:{size:10}}}}
     }
   });
 }
 
-// ═══════════════════════════════════════════════════════════
-//  DETAIL DRAWER
-// ═══════════════════════════════════════════════════════════
-function openDrawer(row) {
-  document.getElementById('drawerTitle').textContent = str(row["NAME"]) || 'Partner';
-  document.getElementById('drawerSub').innerHTML =
-    `<span class="badge zone">${str(row["Zone"])}</span>&nbsp;&nbsp;
-     ${str(row["GID/GCD"] || row["GID/GCDD"] || '—')}`;
+// ── TABLE COLUMNS ────────────────────────────────────────────
+const COLS = [
+  {k:'S.No',       l:'#',            w:36},
+  {k:'GID/GCD',    l:'GID',          gid:true},
+  {k:'NAME',       l:'Partner Name', name:true},
+  {k:'CITY',       l:'City'},
+  {k:'STATE',      l:'State'},
+  {k:'Zone',       l:'Zone',         zone:true},
+  {k:'Owner',      l:'ZH Owner'},
+  {k:'Active/Inactive', l:'Status',  status:true},
+  {k:'Business potential with ID', l:'Biz Pot.', num:true},
+  {k:'_totalBusiness',      l:'Total 13M',  num:true, comp:true},
+  {k:'_avgMonthlyBusiness', l:'Avg/Month',  num:true, comp:true},
+  {k:'Overall Potential',   l:'Overall Pot.', num:true},
+  {k:'Projection for May',  l:'May Proj.',  num:true},
+  {k:'Growth/Degrowth',     l:'Growth',     growth:true},
+  {k:'Calls', l:'Calls', num:true},
+  {k:'Visit',  l:'Visit',  num:true},
+];
 
-  const body = document.getElementById('drawerBody');
-  body.innerHTML = '';
+// ── RENDER TABLE ─────────────────────────────────────────────
+function renderTable() { renderHead(); renderBody(); renderPagination(); }
 
-  // Identity section
-  const idItems = [
-    ['GID', str(row["GID/GCD"]||row["GID/GCDD"])],
-    ['City', str(row["CITY"])],
-    ['State', str(row["STATE"])],
-    ['Zone', str(row["Zone"])],
-    ['ZH Owner', str(row["Owner"])],
-    ['Status', str(row["Active/Inactive"])],
-    ['Growth', (row._growthPct||0).toFixed(0) + '%'],
-    ['Biz Potential', fmtNum(numVal(row["Business potential with ID"]))],
-    ['Overall Pot.', fmtNum(numVal(row["Overall Potential"]))],
-    ['May Proj.', fmtNum(numVal(row["Projection for May"]))],
-    ['Total 13M', '₹' + fmtCr(row._totalBusiness||0)],
-    ['Avg/Month', '₹' + fmtCr(row._avgMonthlyBusiness||0)],
+function renderHead() {
+  const tr = document.createElement('tr');
+  [...COLS, ...MONTH_COLS.map((m,i)=>({k:m,l:MONTH_LABELS[i],mc:true}))].forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = col.l; th.title = col.k;
+    if (col.mc) th.classList.add('mc');
+    if (col.w)  th.style.minWidth = col.w + 'px';
+    if (!col.status && !col.zone) {
+      th.addEventListener('click', () => toggleSort(col.k));
+      if (SCOL === col.k) th.classList.add(SDIR==='asc'?'sa':'sd');
+    }
+    tr.appendChild(th);
+  });
+  el('thead').innerHTML = ''; el('thead').appendChild(tr);
+}
+
+function renderBody() {
+  const start = (PAGE-1)*PS;
+  const slice = FILT.slice(start, start+PS);
+  const tb = el('tbody'); tb.innerHTML = '';
+
+  if (!slice.length) {
+    const tr=document.createElement('tr'), td=document.createElement('td');
+    td.colSpan = COLS.length + MONTH_COLS.length;
+    td.style.cssText = 'text-align:center;padding:40px;color:var(--txt3)';
+    td.textContent = 'No partners found'; tr.appendChild(td); tb.appendChild(tr); return;
+  }
+
+  slice.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', () => openDrw(row));
+
+    COLS.forEach(col => {
+      const td = document.createElement('td');
+      if (col.status) {
+        const a = row._isActive;
+        td.innerHTML = `<span class="bdg ${a?'act':'ina'}">${a?'Active':'Inactive'}</span>`;
+      } else if (col.zone) {
+        td.innerHTML = `<span class="bdg zn">${esc(str(row[col.k]))}</span>`;
+      } else if (col.name) {
+        td.innerHTML = `<span class="cn" title="${esc(str(row[col.k]))}">${esc(str(row[col.k]))}</span>`;
+      } else if (col.gid) {
+        td.className='cg'; td.textContent = str(row[col.k]);
+      } else if (col.growth) {
+        const p = row._growthPct||0, cls=p>0?'p':p<0?'n':'z', ico=p>0?'▲':p<0?'▼':'–';
+        td.innerHTML = `<span class="gchip ${cls}">${ico} ${p!==0?Math.abs(p).toFixed(0)+'%':'0%'}</span>`;
+      } else if (col.num) {
+        const v = col.comp ? (row[col.k]||0) : num(row[col.k]);
+        td.className = 'nm ' + (v>0?'p':v<0?'n':'z');
+        td.textContent = v!==0 ? fmtN(v) : '—';
+      } else {
+        td.textContent = str(row[col.k]);
+      }
+      tr.appendChild(td);
+    });
+
+    MONTH_COLS.forEach(m => {
+      const td = document.createElement('td');
+      const v  = num((row._monthlyData||{})[m]);
+      td.className = 'nm ' + (v>0?'p':v<0?'n':'z');
+      td.textContent = v>0 ? fmtN(v) : '—';
+      tr.appendChild(td);
+    });
+
+    tb.appendChild(tr);
+  });
+}
+
+// ── SORT ────────────────────────────────────────────────────
+function toggleSort(col) {
+  SDIR = SCOL===col ? (SDIR==='asc'?'desc':'asc') : 'desc';
+  SCOL = col; sortArr(FILT,SCOL,SDIR); PAGE=1; renderTable();
+}
+function sortArr(arr, col, dir) {
+  arr.sort((a,b)=>{
+    const va = col.startsWith('_')?a[col]||0 : MONTH_COLS.includes(col)?num((a._monthlyData||{})[col]) : num(a[col])||str(a[col]).toLowerCase();
+    const vb = col.startsWith('_')?b[col]||0 : MONTH_COLS.includes(col)?num((b._monthlyData||{})[col]) : num(b[col])||str(b[col]).toLowerCase();
+    return va<vb?(dir==='asc'?-1:1):va>vb?(dir==='asc'?1:-1):0;
+  });
+}
+
+// ── PAGINATION ───────────────────────────────────────────────
+function renderPagination() {
+  const tot=FILT.length, pages=Math.ceil(tot/PS);
+  const s=Math.min((PAGE-1)*PS+1,tot), e=Math.min(PAGE*PS,tot);
+  el('pinfo').textContent = tot?`Showing ${fmt(s)}–${fmt(e)} of ${fmt(tot)}`:'No results';
+  const c=el('pbtns'); c.innerHTML='';
+  const btn=(lbl,pg,act,dis)=>{const b=document.createElement('button');b.className='pb'+(act?' act':'');b.textContent=lbl;b.disabled=dis;if(!dis)b.addEventListener('click',()=>{PAGE=pg;renderTable()});c.appendChild(b)};
+  btn('‹',PAGE-1,false,PAGE===1);
+  let lo=Math.max(1,PAGE-2),hi=Math.min(pages,PAGE+2);
+  if(lo>1){btn(1,1,false,false);if(lo>2)c.insertAdjacentHTML('beforeend','<span style="color:var(--txt3);padding:0 3px">…</span>')}
+  for(let p=lo;p<=hi;p++)btn(p,p,p===PAGE,false);
+  if(hi<pages){if(hi<pages-1)c.insertAdjacentHTML('beforeend','<span style="color:var(--txt3);padding:0 3px">…</span>');btn(pages,pages,false,false)}
+  btn('›',PAGE+1,false,PAGE>=pages);
+}
+function changePS(){PS=parseInt(el('rsel').value);PAGE=1;renderTable();}
+
+// ── DRAWER ───────────────────────────────────────────────────
+function openDrw(row) {
+  el('drwTitle').textContent = str(row.NAME)||'Partner';
+  el('drwSub').innerHTML = `<span class="bdg zn">${esc(str(row.Zone))}</span>&nbsp; ${esc(str(row['GID/GCD']||'—'))}`;
+  const b = el('drwBody'); b.innerHTML='';
+
+  const fields = [
+    ['GID',str(row['GID/GCD']||'—')],['City',str(row.CITY||'—')],
+    ['State',str(row.STATE||'—')],['Zone',str(row.Zone||'—')],
+    ['Owner',str(row.Owner||'—')],['Status',str(row['Active/Inactive']||'—')],
+    ['Growth',(row._growthPct||0).toFixed(0)+'%'],
+    ['Biz Potential', fmtN(num(row['Business potential with ID']))],
+    ['Overall Pot.', fmtN(num(row['Overall Potential']))],
+    ['May Projection', fmtN(num(row['Projection for May']))],
+    ['Total 13M','₹'+crore(row._totalBusiness||0)],
+    ['Avg/Month','₹'+crore(row._avgMonthlyBusiness||0)],
   ];
 
-  const grid = document.createElement('div');
-  grid.className = 'detail-section';
-  grid.innerHTML = `<div class="detail-section-title">Partner Profile</div>
-    <div class="detail-grid">${idItems.map(([l,v]) =>
-      `<div class="detail-item"><div class="detail-item-label">${l}</div><div class="detail-item-val">${v||'—'}</div></div>`
-    ).join('')}</div>`;
-  body.appendChild(grid);
+  const sec1 = document.createElement('div');
+  sec1.innerHTML = `<div class="dsec-ttl">Partner Profile</div><div class="dgrid">${
+    fields.map(([l,v])=>`<div class="di"><div class="dil">${l}</div><div class="div2">${v}</div></div>`).join('')
+  }</div>`;
+  b.appendChild(sec1);
 
-  // Monthly chart
-  const sec = document.createElement('div');
-  sec.className = 'detail-section';
-  sec.innerHTML = `<div class="detail-section-title">Monthly Business (₹)</div>
-    <div class="monthly-chart-wrap"><canvas id="drawerChartCanvas"></canvas></div>`;
-  body.appendChild(sec);
+  const sec2 = document.createElement('div');
+  sec2.innerHTML = `<div class="dsec-ttl">Monthly Business (₹)</div><div class="mcw"><canvas id="cDrw"></canvas></div>`;
+  b.appendChild(sec2);
 
-  const vals   = MONTH_COLS.map(m => numVal((row._monthlyData||{})[m]));
-  const labels = CFG.MONTH_LABELS || MONTH_COLS;
-
-  if (drawerChart) drawerChart.destroy();
-  setTimeout(() => {
-    drawerChart = new Chart(document.getElementById('drawerChartCanvas'), {
-      type: 'bar',
-      data: {
-        labels,
-        datasets: [{
-          data: vals,
-          backgroundColor: vals.map(v => v > 0 ? 'rgba(59,130,246,0.55)' : 'rgba(239,68,68,0.45)'),
-          borderColor:     vals.map(v => v > 0 ? 'rgba(59,130,246,0.9)' : 'rgba(239,68,68,0.8)'),
-          borderWidth: 1, borderRadius: 3
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹'+fmtCr(ctx.parsed.y) }}},
-        scales: {
-          x: { grid: { display: false }, ticks: { color: '#4d6380', font: {size:9} }},
-          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: {size:9},
-            callback: v => '₹'+fmtCr(v) }}
-        }
-      }
+  const vals = MONTH_COLS.map(m => num((row._monthlyData||{})[m]));
+  if (cDrw) cDrw.destroy();
+  setTimeout(()=>{
+    cDrw = new Chart(el('cDrw'),{
+      type:'bar',
+      data:{labels:MONTH_LABELS,datasets:[{data:vals,
+        backgroundColor:vals.map(v=>v>0?'rgba(59,130,246,.5)':'rgba(244,63,94,.4)'),
+        borderColor:vals.map(v=>v>0?'rgba(59,130,246,.9)':'rgba(244,63,94,.8)'),
+        borderWidth:1,borderRadius:3}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>'₹'+crore(c.parsed.y)}}},
+        scales:{x:{grid:{display:false},ticks:{color:'#3d5470',font:{size:8}}},
+                y:{grid:{color:'rgba(255,255,255,.03)'},ticks:{color:'#3d5470',font:{size:8},callback:v=>'₹'+crore(v)}}}}
     });
-  }, 50);
+  },40);
 
-  // Call/Visit status
-  const cvSec = document.createElement('div');
-  cvSec.className = 'detail-section';
-  cvSec.innerHTML = `<div class="detail-section-title">Connect Status</div>
-    <div class="detail-grid">
-      <div class="detail-item"><div class="detail-item-label">Calls</div><div class="detail-item-val">${str(row["Calls"])||'—'}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Visit</div><div class="detail-item-val">${str(row["Visit"])||'—'}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Unique Calls</div><div class="detail-item-val">${str(row["Calls"]||'')||'—'}</div></div>
-      <div class="detail-item"><div class="detail-item-label">Remark</div><div class="detail-item-val" style="font-size:11px">${str(row["REMARK"]||row["For this sheet"]||'')||'—'}</div></div>
-    </div>`;
-  body.appendChild(cvSec);
+  const sec3=document.createElement('div');
+  sec3.innerHTML=`<div class="dsec-ttl">Connect Status</div><div class="dgrid">
+    <div class="di"><div class="dil">Calls</div><div class="div2">${str(row.Calls||'—')}</div></div>
+    <div class="di"><div class="dil">Visit</div><div class="div2">${str(row.Visit||'—')}</div></div>
+    <div class="di"><div class="dil">Remark</div><div class="div2" style="font-size:11px">${str(row.REMARK||row['For this sheet']||'—')}</div></div>
+    <div class="di"><div class="dil">Email</div><div class="div2" style="font-size:10px;word-break:break-all">${str(row.Email||'—')}</div></div>
+  </div>`;
+  b.appendChild(sec3);
 
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('drawerOverlay').classList.add('open');
+  el('dov').classList.add('on'); el('drw').classList.add('on');
 }
+function closeDrw(){el('dov').classList.remove('on');el('drw').classList.remove('on');}
 
-function closeDrawer() {
-  document.getElementById('drawer').classList.remove('open');
-  document.getElementById('drawerOverlay').classList.remove('open');
-}
-
-// ═══════════════════════════════════════════════════════════
-//  EXPORT CSV
-// ═══════════════════════════════════════════════════════════
-function exportCSV() {
-  const cols = [...VISIBLE_COLS.filter(c => !c.spark && !c.computed), ...MONTH_COLS.map(m => ({key:m, label:m}))];
-  const header = cols.map(c => `"${c.label}"`).join(',');
-
-  const rows = FILTERED_DATA.map(r => cols.map(c => {
-    let v;
-    if (MONTH_COLS.includes(c.key)) v = numVal((r._monthlyData||{})[c.key]);
-    else v = str(r[c.key]);
-    return typeof v === 'number' ? v : `"${String(v).replace(/"/g,'""')}"`;
+// ── CSV EXPORT ───────────────────────────────────────────────
+function exportCSV(){
+  const cols=[...COLS.filter(c=>!c.comp),...MONTH_COLS.map((m,i)=>({k:m,l:MONTH_LABELS[i]}))];
+  const hdr=cols.map(c=>`"${c.l}"`).join(',');
+  const rows=FILT.map(r=>cols.map(c=>{
+    let v=MONTH_COLS.includes(c.k)?num((r._monthlyData||{})[c.k]):str(r[c.k]);
+    return typeof v==='number'?v:`"${String(v).replace(/"/g,'""')}"`;
   }).join(','));
-
-  const csv  = [header, ...rows].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a'); a.href = url;
-  a.download = `partner_export_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
+  const blob=new Blob([[hdr,...rows].join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`partners_${new Date().toISOString().slice(0,10)}.csv`;a.click();
 }
 
-// ═══════════════════════════════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════════════════════════════
-function str(v)     { return v === null || v === undefined ? '' : String(v).trim(); }
-function numVal(v)  { if (v === null||v===undefined||v==='') return 0; const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; }
-function fmt(n)     { return Number(n).toLocaleString('en-IN'); }
-function fmtNum(n)  { return n >= 1e7 ? '₹'+fmtCr(n) : '₹'+fmt(n); }
-function fmtCr(n)   {
-  if (Math.abs(n) >= 1e7) return (n/1e7).toFixed(2) + 'Cr';
-  if (Math.abs(n) >= 1e5) return (n/1e5).toFixed(1) + 'L';
-  return fmt(n);
-}
-function pct(a,b)   { return b > 0 ? (a*100/b).toFixed(1)+'%' : '0%'; }
-function esc(s)     { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+// ── UTILS ────────────────────────────────────────────────────
+function el(id){return document.getElementById(id)}
+function show(id){el(id).style.display='flex'}
+function hide(id){el(id).style.display='none'}
+function msg(t){el('splashMsg').textContent=t}
+function showErr(m){el('errMsg').textContent=m;el('errBox').classList.add('on')}
+function hideErr(){el('errBox').classList.remove('on')}
+function str(v){return v===null||v===undefined?'':String(v).trim()}
+function num(v){if(v===null||v===undefined||v==='')return 0;const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?0:n}
+function fmt(n){return Number(n).toLocaleString('en-IN')}
+function fmtN(n){return n>=1e5?'₹'+crore(n):'₹'+fmt(Math.round(n))}
+function crore(n){if(Math.abs(n)>=1e7)return(n/1e7).toFixed(2)+'Cr';if(Math.abs(n)>=1e5)return(n/1e5).toFixed(1)+'L';return fmt(Math.round(n))}
+function pct(a,b){return b>0?(a*100/b).toFixed(1)+'%':'0%'}
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 </script>
 </body>
 </html>
