@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Partner Performance Dashboard · InsuranceDekho</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════ */
+:root {
+  --bg:           #0b0f1a;
+  --surface:      #111827;
+  --surface2:     #1a2236;
+  --surface3:     #1f2d45;
+  --border:       #1e2d45;
+  --border2:      #2a3f5f;
+
+  --text:         #e8edf5;
+  --text-2:       #8fa3be;
+  --text-3:       #4d6380;
+
+  --accent:       #3b82f6;
+  --accent-glow:  rgba(59,130,246,0.15);
+  --accent2:      #06b6d4;
+  --green:        #10b981;
+  --red:          #ef4444;
+  --amber:        #f59e0b;
+  --purple:       #8b5cf6;
+
+  --font:         'DM Sans', sans-serif;
+  --mono:         'DM Mono', monospace;
+  --radius:       10px;
+  --radius-lg:    16px;
+  --shadow:       0 4px 24px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 14px; scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--surface); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── Header ── */
+.header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(11,15,26,0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  display: flex; align-items: center; gap: 20px;
+  height: 60px;
+}
+.header-logo {
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-badge {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px; color: #fff;
+  flex-shrink: 0;
+}
+.header-title { font-size: 15px; font-weight: 600; color: var(--text); }
+.header-sub   { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+.header-spacer { flex: 1; }
+
+.live-badge {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 11px; color: var(--green); font-weight: 500;
+}
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%,100%{ opacity:1; transform:scale(1); }
+  50%    { opacity:0.5; transform:scale(0.8); }
+}
+
+#lastUpdated { font-size: 11px; color: var(--text-3); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border2); background: var(--surface2);
+  color: var(--text-2); border-radius: var(--radius);
+  padding: 6px 14px; font-size: 12px; cursor: pointer;
+  font-family: var(--font); transition: all 0.2s;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+.btn.primary { background: var(--accent); color: #fff; border-color: transparent; }
+.btn.primary:hover { opacity: 0.88; }
+
+/* ── Main content ── */
+.main { padding: 24px 28px; flex: 1; display: flex; flex-direction: column; gap: 20px; }
+
+/* ═══════════════════════════════════════════════
+   LOADING / ERROR
+═══════════════════════════════════════════════ */
+.loading-screen {
+  position: fixed; inset: 0; z-index: 500;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 16px;
+}
+.loading-spinner {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 3px solid var(--border2);
+  border-top-color: var(--accent);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--text-2); font-size: 14px; }
+.loading-sub  { color: var(--text-3); font-size: 12px; }
+
+.error-banner {
+  display: none;
+  background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius); padding: 14px 18px;
+  color: var(--red); font-size: 13px; gap: 10px;
+  align-items: flex-start;
+}
+.error-banner.show { display: flex; }
+
+/* ═══════════════════════════════════════════════
+   KPI CARDS
+═══════════════════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+}
+
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  position: relative; overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+.kpi-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.kpi-card.blue::before  { background: var(--accent); }
+.kpi-card.green::before { background: var(--green); }
+.kpi-card.red::before   { background: var(--red); }
+.kpi-card.amber::before { background: var(--amber); }
+.kpi-card.purple::before{ background: var(--purple); }
+.kpi-card.cyan::before  { background: var(--accent2); }
+
+.kpi-card:hover { transform: translateY(-2px); border-color: var(--border2); }
+
+.kpi-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+.kpi-value { font-size: 26px; font-weight: 700; color: var(--text); margin: 6px 0 4px; line-height: 1; }
+.kpi-value.small { font-size: 18px; }
+.kpi-sub   { font-size: 11px; color: var(--text-3); }
+.kpi-icon  {
+  position: absolute; top: 14px; right: 16px;
+  font-size: 22px; opacity: 0.12;
+}
+
+/* ═══════════════════════════════════════════════
+   CHARTS ROW
+═══════════════════════════════════════════════ */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 14px;
+}
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.chart-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.chart-wrap  { position: relative; height: 200px; }
+
+/* ═══════════════════════════════════════════════
+   FILTERS BAR
+═══════════════════════════════════════════════ */
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+}
+
+.filter-group { display: flex; flex-direction: column; gap: 4px; }
+.filter-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
+
+.filter-input, .filter-select {
+  background: var(--surface); border: 1px solid var(--border2);
+  color: var(--text); border-radius: var(--radius);
+  padding: 7px 12px; font-size: 13px;
+  font-family: var(--font); outline: none;
+  transition: border-color 0.2s;
+  height: 36px;
+}
+.filter-input  { width: 220px; }
+.filter-select { min-width: 140px; cursor: pointer; }
+.filter-input:focus, .filter-select:focus { border-color: var(--accent); }
+.filter-select option { background: var(--surface2); }
+
+.filters-bar .spacer { flex: 1; }
+.result-count { font-size: 12px; color: var(--text-3); align-self: center; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════ */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+.table-scroll { overflow-x: auto; flex: 1; }
+
+table {
+  width: 100%; border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+thead { position: sticky; top: 0; z-index: 10; }
+
+th {
+  background: var(--surface2);
+  color: var(--text-3);
+  font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+}
+th:hover { color: var(--text); background: var(--surface3); }
+th.sorted-asc::after  { content: ' ↑'; color: var(--accent); }
+th.sorted-desc::after { content: ' ↓'; color: var(--accent); }
+
+th.month-col { background: rgba(59,130,246,0.06); color: var(--accent); }
+th.month-col:hover { background: rgba(59,130,246,0.12); }
+
+td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(30,45,69,0.6);
+  color: var(--text-2);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+td:first-child { color: var(--text-3); font-size: 11px; font-family: var(--mono); }
+
+tr:hover td { background: rgba(59,130,246,0.04); color: var(--text); }
+tr:last-child td { border-bottom: none; }
+
+.cell-name { color: var(--text); font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
+.cell-gid  { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+.cell-num  { font-family: var(--mono); text-align: right; }
+.cell-num.positive { color: var(--green); }
+.cell-num.negative { color: var(--red); }
+.cell-num.zero     { color: var(--text-3); }
+
+.badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+}
+.badge.active   { background: rgba(16,185,129,0.12); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.badge.inactive { background: rgba(239,68,68,0.10); color: var(--red);   border: 1px solid rgba(239,68,68,0.15); }
+
+.badge.zone {
+  background: rgba(59,130,246,0.10); color: var(--accent); border: 1px solid rgba(59,130,246,0.2);
+}
+
+.growth-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 11px; font-family: var(--mono); font-weight: 600;
+  padding: 1px 7px; border-radius: 4px;
+}
+.growth-chip.pos { background: rgba(16,185,129,0.1); color: var(--green); }
+.growth-chip.neg { background: rgba(239,68,68,0.08); color: var(--red); }
+.growth-chip.neu { background: rgba(100,116,139,0.1); color: var(--text-3); }
+
+/* Mini sparkline bar */
+.spark-bar {
+  display: inline-block; width: 60px; height: 18px;
+  position: relative; vertical-align: middle;
+}
+.spark-bar canvas { width: 60px !important; height: 18px !important; }
+
+/* ── Pagination ── */
+.table-footer {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface2);
+}
+.page-info { font-size: 12px; color: var(--text-3); flex: 1; }
+
+.page-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 30px; height: 30px; border-radius: 6px;
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text-2); cursor: pointer; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.page-btn:hover { border-color: var(--accent); color: var(--accent); }
+.page-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
+.page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.rows-select {
+  background: var(--surface3); border: 1px solid var(--border2);
+  color: var(--text-2); border-radius: 6px;
+  padding: 5px 8px; font-size: 12px;
+  font-family: var(--font); cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════
+   DETAIL PANEL (side drawer)
+═══════════════════════════════════════════════ */
+.drawer-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(4px);
+  display: none;
+}
+.drawer-overlay.open { display: block; }
+
+.drawer {
+  position: fixed; top: 0; right: -540px; bottom: 0;
+  width: 520px; z-index: 201;
+  background: var(--surface);
+  border-left: 1px solid var(--border2);
+  display: flex; flex-direction: column;
+  transition: right 0.3s cubic-bezier(0.4,0,0.2,1);
+  overflow: hidden;
+}
+.drawer.open { right: 0; }
+
+.drawer-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.drawer-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.drawer-sub   { font-size: 12px; color: var(--text-3); margin-top: 3px; }
+.drawer-close {
+  margin-left: auto; width: 30px; height: 30px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 16px; transition: all 0.15s;
+}
+.drawer-close:hover { border-color: var(--red); color: var(--red); }
+
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+.detail-section { display: flex; flex-direction: column; gap: 8px; }
+.detail-section-title { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.detail-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 10px 12px;
+}
+.detail-item-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.detail-item-val   { font-size: 14px; color: var(--text); font-weight: 500; }
+
+.monthly-chart-wrap { height: 160px; }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media(max-width:1100px) { .charts-row { grid-template-columns: 1fr 1fr; } .charts-row .chart-card:first-child { grid-column: 1/-1; } }
+@media(max-width:700px)  { .charts-row { grid-template-columns: 1fr; } .kpi-grid { grid-template-columns: repeat(2,1fr); } .main { padding: 14px; } }
+</style>
+</head>
+<body>
+
+<!-- LOADING SCREEN -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Loading Partner Data...</div>
+  <div class="loading-sub" id="loadingMsg">Connecting to Google Sheets</div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app" id="app" style="display:none;">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">
+      <div class="logo-badge">ID</div>
+      <div>
+        <div class="header-title">InsuranceDekho</div>
+        <div class="header-sub">Partner Performance Dashboard</div>
+      </div>
+    </div>
+    <div class="header-spacer"></div>
+    <span id="lastUpdated" class="live-badge">
+      <span class="live-dot"></span> Live
+    </span>
+    <button class="btn" id="refreshBtn" onclick="refreshData()">
+      ↻ Refresh
+    </button>
+  </header>
+
+  <main class="main">
+
+    <!-- ERROR BANNER -->
+    <div class="error-banner" id="errorBanner">
+      ⚠️ <span id="errorMsg">Could not load data.</span>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-card blue"><div class="kpi-icon">👥</div><div class="kpi-label">Total Partners</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">across all zones</div></div>
+      <div class="kpi-card green"><div class="kpi-icon">✅</div><div class="kpi-label">Active Partners</div><div class="kpi-value" id="kpiActive">—</div><div class="kpi-sub" id="kpiActivePct">—</div></div>
+      <div class="kpi-card red"><div class="kpi-icon">⛔</div><div class="kpi-label">Inactive Partners</div><div class="kpi-value" id="kpiInactive">—</div><div class="kpi-sub" id="kpiInactivePct">—</div></div>
+      <div class="kpi-card amber"><div class="kpi-icon">📈</div><div class="kpi-label">Growing Partners</div><div class="kpi-value" id="kpiGrowing">—</div><div class="kpi-sub">positive growth</div></div>
+      <div class="kpi-card purple"><div class="kpi-icon">📉</div><div class="kpi-label">Degrowth Partners</div><div class="kpi-value" id="kpiDegrow">—</div><div class="kpi-sub">negative growth</div></div>
+      <div class="kpi-card cyan"><div class="kpi-icon">₹</div><div class="kpi-label">Total Business</div><div class="kpi-value small" id="kpiRevenue">—</div><div class="kpi-sub">last 13 months</div></div>
+    </div>
+
+    <!-- CHARTS ROW -->
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Monthly Business Trend (All Partners)</div>
+        <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Partners by Zone</div>
+        <div class="chart-wrap"><canvas id="zoneChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Partners by Owner</div>
+        <div class="chart-wrap"><canvas id="ownerChart"></canvas></div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filters-bar" id="filtersBar">
+      <div class="filter-group">
+        <div class="filter-label">Search</div>
+        <input class="filter-input" id="searchInput" type="text" placeholder="Name, GID, City, Owner…" oninput="applyFilters()" />
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Zone</div>
+        <select class="filter-select" id="zoneFilter" onchange="applyFilters()">
+          <option value="">All Zones</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">State</div>
+        <select class="filter-select" id="stateFilter" onchange="applyFilters()">
+          <option value="">All States</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Owner (ZH)</div>
+        <select class="filter-select" id="ownerFilter" onchange="applyFilters()">
+          <option value="">All Owners</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Status</div>
+        <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <div class="filter-label">Growth</div>
+        <select class="filter-select" id="growthFilter" onchange="applyFilters()">
+          <option value="">All</option>
+          <option value="pos">Growing</option>
+          <option value="neg">Degrowth</option>
+        </select>
+      </div>
+      <div class="spacer"></div>
+      <div class="result-count" id="resultCount">— partners</div>
+      <button class="btn" onclick="clearFilters()">✕ Clear</button>
+      <button class="btn primary" onclick="exportCSV()">⬇ Export CSV</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-card">
+      <div class="table-scroll">
+        <table>
+          <thead id="tableHead"></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <div class="page-info" id="pageInfo">—</div>
+        <select class="rows-select" id="rowsSelect" onchange="changePageSize()">
+          <option value="25">25 / page</option>
+          <option value="50">50 / page</option>
+          <option value="100">100 / page</option>
+          <option value="200">200 / page</option>
+        </select>
+        <div class="page-btns" id="pageBtns"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- DETAIL DRAWER -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div>
+      <div class="drawer-title" id="drawerTitle">Partner Detail</div>
+      <div class="drawer-sub" id="drawerSub">—</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<!-- CONFIG (paste your URL in config.js) -->
+<script src="config.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════
+let ALL_DATA       = [];
+let HEADERS        = [];
+let MONTH_COLS     = [];
+let FILTERED_DATA  = [];
+let SORTED_COL     = null;
+let SORT_DIR       = 'asc';
+let CURRENT_PAGE   = 1;
+let PAGE_SIZE      = 25;
+let trendChart, zoneChart, ownerChart, drawerChart;
+
+const CFG = window.DASHBOARD_CONFIG || {};
+const API  = CFG.API_URL || "";
+
+// ═══════════════════════════════════════════════════════════
+//  BOOTSTRAP
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  if (!API || API.includes("YOUR_DEPLOYMENT_ID")) {
+    showError("⚠️ Please open config.js and paste your Google Apps Script Web App URL into API_URL.");
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'flex';
+    return;
+  }
+  loadData();
+
+  const interval = (CFG.AUTO_REFRESH_SECONDS || 0) * 1000;
+  if (interval > 0) setInterval(loadData, interval);
+});
+
+// ═══════════════════════════════════════════════════════════
+//  DATA LOADING
+// ═══════════════════════════════════════════════════════════
+async function loadData() {
+  setLoading(true);
+  try {
+    const url = `${API}?action=getData&ts=${Date.now()}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    if (json.error) throw new Error(json.error);
+
+    ALL_DATA   = json.rows || [];
+    HEADERS    = json.headers || [];
+    MONTH_COLS = json.monthCols || CFG.MONTH_COLS || [];
+
+    populateFilters();
+    applyFilters();
+    updateKPIs();
+    updateCharts();
+
+    const ts = new Date(json.lastUpdated || Date.now());
+    document.getElementById('lastUpdated').innerHTML =
+      `<span class="live-dot"></span> ${ts.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'})}`;
+    hideError();
+  } catch (err) {
+    showError(`Failed to load: ${err.message}. Check that your API URL is correct and the Web App is deployed.`);
+    console.error(err);
+  }
+  setLoading(false);
+}
+
+function refreshData() {
+  document.getElementById('refreshBtn').textContent = '↻ Refreshing…';
+  loadData().then(() => {
+    document.getElementById('refreshBtn').textContent = '↻ Refresh';
+  });
+}
+
+function setLoading(on) {
+  document.getElementById('loadingScreen').style.display = on && ALL_DATA.length === 0 ? 'flex' : 'none';
+  document.getElementById('app').style.display = on && ALL_DATA.length === 0 ? 'none' : 'flex';
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBanner');
+  document.getElementById('errorMsg').textContent = msg;
+  el.classList.add('show');
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+function hideError() { document.getElementById('errorBanner').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════════════════
+//  FILTERS
+// ═══════════════════════════════════════════════════════════
+function populateFilters() {
+  const zones   = [...new Set(ALL_DATA.map(r => str(r["Zone"])).filter(Boolean))].sort();
+  const states  = [...new Set(ALL_DATA.map(r => str(r["STATE"])).filter(Boolean))].sort();
+  const owners  = [...new Set(ALL_DATA.map(r => str(r["Owner"])).filter(Boolean))].sort();
+
+  fillSelect('zoneFilter',  zones,  'All Zones');
+  fillSelect('stateFilter', states, 'All States');
+  fillSelect('ownerFilter', owners, 'All Owners');
+}
+
+function fillSelect(id, options, placeholder) {
+  const sel = document.getElementById(id);
+  const cur = sel.value;
+  sel.innerHTML = `<option value="">${placeholder}</option>` +
+    options.map(o => `<option value="${esc(o)}">${esc(o)}</option>`).join('');
+  sel.value = cur;
+}
+
+function applyFilters() {
+  const q     = document.getElementById('searchInput').value.toLowerCase();
+  const zone  = document.getElementById('zoneFilter').value;
+  const state = document.getElementById('stateFilter').value;
+  const owner = document.getElementById('ownerFilter').value;
+  const status= document.getElementById('statusFilter').value;
+  const growth= document.getElementById('growthFilter').value;
+
+  FILTERED_DATA = ALL_DATA.filter(r => {
+    if (q) {
+      const haystack = [r["NAME"],r["GID/GCD"],r["GID/GCDD"],r["CITY"],r["Owner"],r["STATE"],r["Zone"]]
+        .map(v => str(v).toLowerCase()).join(' ');
+      if (!haystack.includes(q)) return false;
+    }
+    if (zone  && str(r["Zone"])  !== zone)  return false;
+    if (state && str(r["STATE"]) !== state) return false;
+    if (owner && str(r["Owner"]) !== owner) return false;
+    if (status === 'active'   && !r._isActive) return false;
+    if (status === 'inactive' &&  r._isActive) return false;
+    if (growth === 'pos' && r._growthPct <= 0) return false;
+    if (growth === 'neg' && r._growthPct >= 0) return false;
+    return true;
+  });
+
+  document.getElementById('resultCount').textContent =
+    `${fmt(FILTERED_DATA.length)} / ${fmt(ALL_DATA.length)} partners`;
+
+  if (SORTED_COL) applySortTo(FILTERED_DATA, SORTED_COL, SORT_DIR);
+
+  CURRENT_PAGE = 1;
+  renderTable();
+}
+
+function clearFilters() {
+  ['searchInput','zoneFilter','stateFilter','ownerFilter','statusFilter','growthFilter']
+    .forEach(id => { const el = document.getElementById(id); el.value = ''; });
+  SORTED_COL = null; SORT_DIR = 'asc';
+  applyFilters();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TABLE RENDER
+// ═══════════════════════════════════════════════════════════
+const VISIBLE_COLS = [
+  { key: 'S.No',           label: '#',          w: 40  },
+  { key: 'GID/GCD',        label: 'GID',         mono: true },
+  { key: 'NAME',           label: 'Partner Name', name: true },
+  { key: 'CITY',           label: 'City'  },
+  { key: 'STATE',          label: 'State' },
+  { key: 'Zone',           label: 'Zone', badge: 'zone' },
+  { key: 'Owner',          label: 'ZH Owner' },
+  { key: 'Active/Inactive',label: 'Status', status: true },
+  { key: 'Business potential with ID', label: 'Biz Potential', num: true },
+  { key: '_totalBusiness', label: 'Total (13M)', num: true, computed: true },
+  { key: '_avgMonthlyBusiness', label: 'Avg/Month', num: true, computed: true },
+  { key: 'Overall Potential', label: 'Overall Pot.', num: true },
+  { key: 'Projection for May', label: 'May Proj.', num: true },
+  { key: 'Growth/Degrowth', label: 'Growth', growth: true },
+  { key: 'Calls',          label: 'Calls', num: true },
+  { key: 'Visit',          label: 'Visit', num: true },
+  { key: '_spark',         label: '13M Trend', spark: true },
+];
+
+function renderTable() {
+  renderHead();
+  renderBody();
+  renderPagination();
+}
+
+function renderHead() {
+  const head = document.getElementById('tableHead');
+  const row  = document.createElement('tr');
+
+  VISIBLE_COLS.forEach(col => {
+    const th = document.createElement('th');
+    th.textContent = col.label;
+    th.style.minWidth = col.w ? col.w + 'px' : '';
+    if (!col.spark && !col.computed) th.style.cursor = 'pointer';
+    if (MONTH_COLS.includes(col.key)) th.classList.add('month-col');
+    if (!col.spark && !col.status && !col.badge) {
+      th.addEventListener('click', () => toggleSort(col.key));
+    }
+    if (SORTED_COL === col.key) th.classList.add(SORT_DIR === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    row.appendChild(th);
+  });
+
+  // Month columns
+  MONTH_COLS.forEach((m, i) => {
+    const th = document.createElement('th');
+    th.classList.add('month-col');
+    th.textContent = (CFG.MONTH_LABELS || [])[i] || m;
+    th.title = m;
+    th.addEventListener('click', () => toggleSort(m));
+    if (SORTED_COL === m) th.classList.add(SORT_DIR === 'asc' ? 'sorted-asc' : 'sorted-desc');
+    row.appendChild(th);
+  });
+
+  head.innerHTML = '';
+  head.appendChild(row);
+}
+
+function renderBody() {
+  const start = (CURRENT_PAGE - 1) * PAGE_SIZE;
+  const slice = FILTERED_DATA.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  if (slice.length === 0) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.colSpan = VISIBLE_COLS.length + MONTH_COLS.length;
+    td.style.cssText = 'text-align:center;padding:40px;color:var(--text-3)';
+    td.textContent = 'No partners found';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  slice.forEach((row, idx) => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.addEventListener('click', () => openDrawer(row));
+
+    VISIBLE_COLS.forEach(col => {
+      const td = document.createElement('td');
+
+      if (col.key === '_spark') {
+        const canvas = document.createElement('canvas');
+        canvas.width = 60; canvas.height = 18;
+        td.appendChild(canvas);
+        setTimeout(() => renderMiniSpark(canvas, row), 0);
+
+      } else if (col.status) {
+        const raw = str(row[col.key]);
+        const isActive = raw.toLowerCase().includes('active') && !raw.toLowerCase().includes('inactive');
+        td.innerHTML = `<span class="badge ${isActive ? 'active' : 'inactive'}">${isActive ? 'Active' : 'Inactive'}</span>`;
+
+      } else if (col.badge === 'zone') {
+        td.innerHTML = `<span class="badge zone">${esc(str(row[col.key]))}</span>`;
+
+      } else if (col.name) {
+        td.innerHTML = `<span class="cell-name" title="${esc(str(row[col.key]))}">${esc(str(row[col.key]))}</span>`;
+
+      } else if (col.growth) {
+        const pct = parseFloat(str(row[col.key]).replace(/%/g,'')) || row._growthPct || 0;
+        const cls = pct > 0 ? 'pos' : pct < 0 ? 'neg' : 'neu';
+        const icon = pct > 0 ? '▲' : pct < 0 ? '▼' : '–';
+        td.innerHTML = `<span class="growth-chip ${cls}">${icon} ${pct !== 0 ? Math.abs(pct).toFixed(0)+'%' : '0%'}</span>`;
+
+      } else if (col.num || col.computed) {
+        const v = col.computed ? (row[col.key] || 0) : numVal(row[col.key]);
+        td.className = 'cell-num ' + (v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero');
+        td.textContent = v !== 0 ? fmtNum(v) : '—';
+
+      } else if (col.mono) {
+        td.className = 'cell-gid';
+        td.textContent = str(row[col.key]);
+
+      } else {
+        td.textContent = str(row[col.key]);
+      }
+
+      tr.appendChild(td);
+    });
+
+    // Month cells
+    MONTH_COLS.forEach(m => {
+      const td = document.createElement('td');
+      const v  = numVal((row._monthlyData || {})[m]);
+      td.className = 'cell-num ' + (v > 0 ? 'positive' : v < 0 ? 'negative' : 'zero');
+      td.textContent = v > 0 ? fmtNum(v) : '—';
+      tr.appendChild(td);
+    });
+
+    tbody.appendChild(tr);
+  });
+}
+
+// ── Mini sparkline ──
+function renderMiniSpark(canvas, row) {
+  const ctx = canvas.getContext('2d');
+  const vals = MONTH_COLS.map(m => numVal((row._monthlyData || {})[m]));
+  if (vals.every(v => v === 0)) { ctx.fillStyle = '#4d6380'; ctx.fillRect(20,8,20,2); return; }
+
+  const max = Math.max(...vals) || 1;
+  const w = 60, h = 18, pad = 1;
+  const step = (w - pad*2) / Math.max(vals.length - 1, 1);
+
+  ctx.clearRect(0,0,w,h);
+  ctx.beginPath();
+  vals.forEach((v, i) => {
+    const x = pad + i * step;
+    const y = pad + (1 - v/max) * (h - pad*2);
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  SORT
+// ═══════════════════════════════════════════════════════════
+function toggleSort(col) {
+  if (SORTED_COL === col) SORT_DIR = SORT_DIR === 'asc' ? 'desc' : 'asc';
+  else { SORTED_COL = col; SORT_DIR = 'desc'; }
+  applySortTo(FILTERED_DATA, SORTED_COL, SORT_DIR);
+  CURRENT_PAGE = 1;
+  renderTable();
+}
+
+function applySortTo(arr, col, dir) {
+  arr.sort((a, b) => {
+    let va = col.startsWith('_') ? (a[col] || 0) : (MONTH_COLS.includes(col)
+      ? numVal((a._monthlyData||{})[col]) : numVal(a[col]) || str(a[col]).toLowerCase());
+    let vb = col.startsWith('_') ? (b[col] || 0) : (MONTH_COLS.includes(col)
+      ? numVal((b._monthlyData||{})[col]) : numVal(b[col]) || str(b[col]).toLowerCase());
+    if (va < vb) return dir === 'asc' ? -1 : 1;
+    if (va > vb) return dir === 'asc' ?  1 : -1;
+    return 0;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PAGINATION
+// ═══════════════════════════════════════════════════════════
+function renderPagination() {
+  const total = FILTERED_DATA.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  const start = Math.min((CURRENT_PAGE - 1) * PAGE_SIZE + 1, total);
+  const end   = Math.min(CURRENT_PAGE * PAGE_SIZE, total);
+
+  document.getElementById('pageInfo').textContent =
+    total === 0 ? 'No results' : `Showing ${fmt(start)}–${fmt(end)} of ${fmt(total)}`;
+
+  const container = document.getElementById('pageBtns');
+  container.innerHTML = '';
+
+  const addBtn = (label, page, active, disabled) => {
+    const b = document.createElement('button');
+    b.className = 'page-btn' + (active ? ' active' : '');
+    b.textContent = label;
+    b.disabled = disabled;
+    if (!disabled) b.addEventListener('click', () => { CURRENT_PAGE = page; renderTable(); });
+    container.appendChild(b);
+  };
+
+  addBtn('‹', CURRENT_PAGE - 1, false, CURRENT_PAGE === 1);
+
+  const window_ = 2;
+  let lo = Math.max(1, CURRENT_PAGE - window_);
+  let hi = Math.min(pages, CURRENT_PAGE + window_);
+  if (lo > 1) { addBtn(1, 1, false, false); if (lo > 2) container.insertAdjacentHTML('beforeend','<span style="color:var(--text-3);align-self:center;padding:0 4px">…</span>'); }
+  for (let p = lo; p <= hi; p++) addBtn(p, p, p === CURRENT_PAGE, false);
+  if (hi < pages) { if (hi < pages-1) container.insertAdjacentHTML('beforeend','<span style="color:var(--text-3);align-self:center;padding:0 4px">…</span>'); addBtn(pages, pages, false, false); }
+
+  addBtn('›', CURRENT_PAGE + 1, false, CURRENT_PAGE >= pages);
+}
+
+function changePageSize() {
+  PAGE_SIZE = parseInt(document.getElementById('rowsSelect').value);
+  CURRENT_PAGE = 1;
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  KPI CARDS
+// ═══════════════════════════════════════════════════════════
+function updateKPIs() {
+  const total    = ALL_DATA.length;
+  const active   = ALL_DATA.filter(r => r._isActive).length;
+  const inactive = total - active;
+  const growing  = ALL_DATA.filter(r => r._growthPct > 0).length;
+  const degrow   = ALL_DATA.filter(r => r._growthPct < 0).length;
+  const totalBiz = ALL_DATA.reduce((s, r) => s + (r._totalBusiness || 0), 0);
+
+  document.getElementById('kpiTotal').textContent    = fmt(total);
+  document.getElementById('kpiActive').textContent   = fmt(active);
+  document.getElementById('kpiInactive').textContent = fmt(inactive);
+  document.getElementById('kpiGrowing').textContent  = fmt(growing);
+  document.getElementById('kpiDegrow').textContent   = fmt(degrow);
+  document.getElementById('kpiRevenue').textContent  = '₹' + fmtCr(totalBiz);
+  document.getElementById('kpiActivePct').textContent   = `${pct(active, total)} of total`;
+  document.getElementById('kpiInactivePct').textContent = `${pct(inactive, total)} of total`;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CHARTS
+// ═══════════════════════════════════════════════════════════
+const CHART_OPTS = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: { size: 10 } } },
+    y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: { size: 10 },
+      callback: v => '₹' + fmtCr(v) } }
+  }
+};
+
+function updateCharts() {
+  // Trend chart
+  const monthTotals = MONTH_COLS.map(m =>
+    ALL_DATA.reduce((s, r) => s + numVal((r._monthlyData||{})[m]), 0)
+  );
+  const labels = CFG.MONTH_LABELS || MONTH_COLS;
+
+  if (trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: monthTotals,
+        backgroundColor: monthTotals.map((v, i) => i === monthTotals.length-1 ? 'rgba(59,130,246,0.8)' : 'rgba(59,130,246,0.35)'),
+        borderColor: 'rgba(59,130,246,0.9)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: { ...CHART_OPTS, plugins: { legend: { display: false }, tooltip: { callbacks: {
+      label: ctx => '₹' + fmtCr(ctx.parsed.y)
+    }}}}
+  });
+
+  // Zone donut
+  const zoneMap = {};
+  ALL_DATA.forEach(r => { const z = str(r["Zone"]) || 'Unknown'; zoneMap[z] = (zoneMap[z]||0) + 1; });
+  const zLabels = Object.keys(zoneMap);
+  const zData   = Object.values(zoneMap);
+  const PALETTE = ['#3b82f6','#06b6d4','#10b981','#f59e0b','#8b5cf6','#ef4444','#f97316'];
+
+  if (zoneChart) zoneChart.destroy();
+  zoneChart = new Chart(document.getElementById('zoneChart'), {
+    type: 'doughnut',
+    data: { labels: zLabels, datasets: [{ data: zData,
+      backgroundColor: PALETTE.slice(0, zLabels.length),
+      borderColor: 'rgba(0,0,0,0.3)', borderWidth: 1.5
+    }]},
+    options: { responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { color: '#8fa3be', font: {size:10}, boxWidth:10 }},
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.parsed} partners` }}
+      }, cutout: '65%'
+    }
+  });
+
+  // Owner bar (top 8)
+  const ownerMap = {};
+  ALL_DATA.forEach(r => { const o = str(r["Owner"]) || 'Unknown'; ownerMap[o] = (ownerMap[o]||0) + 1; });
+  const oEntries = Object.entries(ownerMap).sort((a,b) => b[1]-a[1]).slice(0,8);
+
+  if (ownerChart) ownerChart.destroy();
+  ownerChart = new Chart(document.getElementById('ownerChart'), {
+    type: 'bar',
+    data: {
+      labels: oEntries.map(e => e[0]),
+      datasets: [{ data: oEntries.map(e => e[1]),
+        backgroundColor: 'rgba(6,182,212,0.45)',
+        borderColor: 'rgba(6,182,212,0.9)',
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }},
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: {size:10} }},
+        y: { grid: { display: false }, ticks: { color: '#8fa3be', font: {size:10} }}
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DETAIL DRAWER
+// ═══════════════════════════════════════════════════════════
+function openDrawer(row) {
+  document.getElementById('drawerTitle').textContent = str(row["NAME"]) || 'Partner';
+  document.getElementById('drawerSub').innerHTML =
+    `<span class="badge zone">${str(row["Zone"])}</span>&nbsp;&nbsp;
+     ${str(row["GID/GCD"] || row["GID/GCDD"] || '—')}`;
+
+  const body = document.getElementById('drawerBody');
+  body.innerHTML = '';
+
+  // Identity section
+  const idItems = [
+    ['GID', str(row["GID/GCD"]||row["GID/GCDD"])],
+    ['City', str(row["CITY"])],
+    ['State', str(row["STATE"])],
+    ['Zone', str(row["Zone"])],
+    ['ZH Owner', str(row["Owner"])],
+    ['Status', str(row["Active/Inactive"])],
+    ['Growth', (row._growthPct||0).toFixed(0) + '%'],
+    ['Biz Potential', fmtNum(numVal(row["Business potential with ID"]))],
+    ['Overall Pot.', fmtNum(numVal(row["Overall Potential"]))],
+    ['May Proj.', fmtNum(numVal(row["Projection for May"]))],
+    ['Total 13M', '₹' + fmtCr(row._totalBusiness||0)],
+    ['Avg/Month', '₹' + fmtCr(row._avgMonthlyBusiness||0)],
+  ];
+
+  const grid = document.createElement('div');
+  grid.className = 'detail-section';
+  grid.innerHTML = `<div class="detail-section-title">Partner Profile</div>
+    <div class="detail-grid">${idItems.map(([l,v]) =>
+      `<div class="detail-item"><div class="detail-item-label">${l}</div><div class="detail-item-val">${v||'—'}</div></div>`
+    ).join('')}</div>`;
+  body.appendChild(grid);
+
+  // Monthly chart
+  const sec = document.createElement('div');
+  sec.className = 'detail-section';
+  sec.innerHTML = `<div class="detail-section-title">Monthly Business (₹)</div>
+    <div class="monthly-chart-wrap"><canvas id="drawerChartCanvas"></canvas></div>`;
+  body.appendChild(sec);
+
+  const vals   = MONTH_COLS.map(m => numVal((row._monthlyData||{})[m]));
+  const labels = CFG.MONTH_LABELS || MONTH_COLS;
+
+  if (drawerChart) drawerChart.destroy();
+  setTimeout(() => {
+    drawerChart = new Chart(document.getElementById('drawerChartCanvas'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: vals,
+          backgroundColor: vals.map(v => v > 0 ? 'rgba(59,130,246,0.55)' : 'rgba(239,68,68,0.45)'),
+          borderColor:     vals.map(v => v > 0 ? 'rgba(59,130,246,0.9)' : 'rgba(239,68,68,0.8)'),
+          borderWidth: 1, borderRadius: 3
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '₹'+fmtCr(ctx.parsed.y) }}},
+        scales: {
+          x: { grid: { display: false }, ticks: { color: '#4d6380', font: {size:9} }},
+          y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4d6380', font: {size:9},
+            callback: v => '₹'+fmtCr(v) }}
+        }
+      }
+    });
+  }, 50);
+
+  // Call/Visit status
+  const cvSec = document.createElement('div');
+  cvSec.className = 'detail-section';
+  cvSec.innerHTML = `<div class="detail-section-title">Connect Status</div>
+    <div class="detail-grid">
+      <div class="detail-item"><div class="detail-item-label">Calls</div><div class="detail-item-val">${str(row["Calls"])||'—'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Visit</div><div class="detail-item-val">${str(row["Visit"])||'—'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Unique Calls</div><div class="detail-item-val">${str(row["Calls"]||'')||'—'}</div></div>
+      <div class="detail-item"><div class="detail-item-label">Remark</div><div class="detail-item-val" style="font-size:11px">${str(row["REMARK"]||row["For this sheet"]||'')||'—'}</div></div>
+    </div>`;
+  body.appendChild(cvSec);
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('drawerOverlay').classList.add('open');
+}
+
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawerOverlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  EXPORT CSV
+// ═══════════════════════════════════════════════════════════
+function exportCSV() {
+  const cols = [...VISIBLE_COLS.filter(c => !c.spark && !c.computed), ...MONTH_COLS.map(m => ({key:m, label:m}))];
+  const header = cols.map(c => `"${c.label}"`).join(',');
+
+  const rows = FILTERED_DATA.map(r => cols.map(c => {
+    let v;
+    if (MONTH_COLS.includes(c.key)) v = numVal((r._monthlyData||{})[c.key]);
+    else v = str(r[c.key]);
+    return typeof v === 'number' ? v : `"${String(v).replace(/"/g,'""')}"`;
+  }).join(','));
+
+  const csv  = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url;
+  a.download = `partner_export_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function str(v)     { return v === null || v === undefined ? '' : String(v).trim(); }
+function numVal(v)  { if (v === null||v===undefined||v==='') return 0; const n=parseFloat(String(v).replace(/,/g,'')); return isNaN(n)?0:n; }
+function fmt(n)     { return Number(n).toLocaleString('en-IN'); }
+function fmtNum(n)  { return n >= 1e7 ? '₹'+fmtCr(n) : '₹'+fmt(n); }
+function fmtCr(n)   {
+  if (Math.abs(n) >= 1e7) return (n/1e7).toFixed(2) + 'Cr';
+  if (Math.abs(n) >= 1e5) return (n/1e5).toFixed(1) + 'L';
+  return fmt(n);
+}
+function pct(a,b)   { return b > 0 ? (a*100/b).toFixed(1)+'%' : '0%'; }
+function esc(s)     { const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
+</script>
+</body>
+</html>
