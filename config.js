@@ -13,8 +13,9 @@
 
 const DASHBOARD_CONFIG = {
   // ← PASTE YOUR WEB APP URL HERE
+  
   API_URL: "https://script.google.com/macros/s/AKfycbwuYGbPRvNIOFRMHO2C1emPfmwHVIjrVb57ask8goT6b4Yr4hDWwv9V9hHFqEUjMkSmZQ/exec",
-
+  
   // Dashboard branding
   COMPANY_NAME: "InsuranceDekho",
   DASHBOARD_TITLE: "Partner Performance Dashboard",
