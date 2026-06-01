@@ -237,8 +237,8 @@ select.finput option{background:var(--surf2)}
       </div>
       <div><div class="login-title">Welcome back</div><div class="login-sub">Sign in to your dashboard</div></div>
       <div style="display:flex;flex-direction:column;gap:11px">
-        <div class="fgroup"><div class="flbl">Email Address</div><input class="finput" id="lEmail" type="email" placeholder="you@insurancedekho.com" autocomplete="email"/></div>
-        <div class="fgroup"><div class="flbl">Password</div><input class="finput" id="lPass" type="password" placeholder="Enter your password" autocomplete="current-password"/></div>
+        <div class="fgroup"><div class="flbl">Email Address</div><input class="finput" id="lEmail" type="text" placeholder="you@insurancedekho.com" autocomplete="off"/></div>
+        <div class="fgroup"><div class="flbl">Password</div><input class="finput" id="lPass" type="password" placeholder="Enter your password" autocomplete="new-password"/></div>
       </div>
       <div class="login-err" id="lErr"></div>
       <button class="btn-primary" id="lBtn" onclick="doLogin()">Sign In →</button>
@@ -459,13 +459,22 @@ function showLoginPage() {
 
 function showPanel(id) {
   ['pLogin','pSetup','pForgot'].forEach(p=>{ const e=el(p); if(e) e.style.display='none'; });
-  el(id).style.display='flex'; el(id).style.flexDirection='column'; el(id).style.gap='24px';
+  const t=el(id); if(t){ t.style.display='flex'; t.style.flexDirection='column'; t.style.gap='24px'; }
+  setTimeout(()=>{ const inp=t&&t.querySelector('input'); if(inp)inp.focus(); },100);
 }
 
+
+
+
+
 async function doLogin() {
-  const email = val('lEmail').trim();
-  const pass  = val('lPass').trim();
-  if (!email||!pass){ showLoginErr('Please enter your email and password.'); return; }
+  // Read directly from DOM to avoid autofill/display issues
+  const emailEl = document.getElementById('lEmail');
+  const passEl  = document.getElementById('lPass');
+  const email   = (emailEl ? emailEl.value : '').trim();
+  const pass    = (passEl  ? passEl.value  : '').trim();
+  if (!email){ showLoginErr('Please enter your email address.'); emailEl && emailEl.focus(); return; }
+  if (!pass) { showLoginErr('Please enter your password.'); passEl && passEl.focus(); return; }
   setBtn('lBtn',true,'Signing in…');
   hideLoginErr();
   try {
